@@ -7,6 +7,7 @@
 
 #include "views/gamelist/BasicGameListView.h"
 #include "views/gamelist/DetailedGameListView.h"
+#include "views/gamelist/VideoGameListView.h"
 #include "views/gamelist/GridGameListView.h"
 #include "guis/GuiMenu.h"
 #include "guis/GuiDetectDevice.h"
@@ -14,6 +15,7 @@
 #include "animations/LaunchAnimation.h"
 #include "animations/MoveCameraAnimation.h"
 #include "animations/LambdaAnimation.h"
+#include <SDL2/SDL.h>
 
 #include "AudioManager.h"
 
@@ -66,6 +68,12 @@ int ViewController::getSystemId(SystemData* system)
 
 void ViewController::goToSystemView(SystemData* system)
 {
+	// Tell any current view it's about to be hidden
+	if (mCurrentView)
+	{
+		mCurrentView->onHide();
+	}
+
 	mState.viewing = SYSTEM_SELECT;
 	mState.system = system;
 
@@ -134,7 +142,15 @@ void ViewController::goToGameList(SystemData* system)
 	mState.viewing = GAME_LIST;
 	mState.system = system;
 
+	if (mCurrentView)
+	{
+		mCurrentView->onHide();
+	}
 	mCurrentView = getGameListView(system);
+	if (mCurrentView)
+	{
+		mCurrentView->onShow();
+	}
 	playViewTransition();
 }
 
@@ -244,6 +260,10 @@ void ViewController::launch(FileData* game, Eigen::Vector3f center)
 		return;
 	}
 
+	// Hide the current view
+	if (mCurrentView)
+		mCurrentView->onHide();
+
 	Eigen::Affine3f origCamera = mCamera;
 	origCamera.translation() = -mCurrentView->getPosition();
 
@@ -291,17 +311,26 @@ std::shared_ptr<IGameListView> ViewController::getGameListView(SystemData* syste
 
 	//decide type
 	bool detailed = false;
+	bool video	  = false;
 	std::vector<FileData*> files = system->getRootFolder()->getFilesRecursive(GAME | FOLDER);
 	for(auto it = files.begin(); it != files.end(); it++)
 	{
-		if(!(*it)->getThumbnailPath().empty())
+		if(!(*it)->getVideoPath().empty())
 		{
-			detailed = true;
+			video = true;
 			break;
 		}
+		else if(!(*it)->getThumbnailPath().empty())
+		{
+			detailed = true;
+			// Don't break out in case any subsequent files have video
+		}
 	}
-
-	if(detailed)
+		
+	if (video)
+		// Create the view
+		view = std::shared_ptr<IGameListView>(new VideoGameListView(mWindow, system->getRootFolder()));
+	else if(detailed)
 		view = std::shared_ptr<IGameListView>(new DetailedGameListView(mWindow, system->getRootFolder(), system));
 	else
 		view = std::shared_ptr<IGameListView>(new BasicGameListView(mWindow, system->getRootFolder()));
@@ -443,6 +472,10 @@ void ViewController::reloadGameListView(IGameListView* view, bool reloadTheme)
 			break;
 		}
 	}
+	// Redisplay the current view
+	if (mCurrentView)
+		mCurrentView->onShow();
+
 }
 
 void ViewController::reloadAll()
