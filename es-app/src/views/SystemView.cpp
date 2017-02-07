@@ -248,8 +248,7 @@ void SystemView::onCursorChanged(const CursorState& state)
 	setAnimation(infoFadeOut, 0, [this, gameCount, favoritesCount, gameNoHiddenCount, hiddenCount] {
 		char strbuf[256];
 		if (getSelected()->hasPlatformId(PlatformIds::SYSCONFIG)) {
-			_("CONFIGURATION");
-			// only display a game count if there are at least 2 games
+			snprintf(strbuf, 256, "%s", _("CONFIGURATION").c_str());
 		}else if(favoritesCount == 0 && hiddenCount == 0) {
 			snprintf(strbuf, 256, ngettext("%i GAME AVAILABLE", "%i GAMES AVAILABLE", gameNoHiddenCount).c_str(), gameNoHiddenCount);
 		}else if (favoritesCount != 0 && hiddenCount == 0) {
