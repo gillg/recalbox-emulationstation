@@ -110,7 +110,7 @@ bool SystemView::input(InputConfig* config, Input input)
 {
 	if(input.value != 0)
 	{
-		if(config->getDeviceId() == DEVICE_KEYBOARD && input.value && input.id == SDLK_r && SDL_GetModState() & KMOD_LCTRL && Settings::getInstance()->getBool("Debug"))
+		if(config->getDeviceId() == DEVICE_KEYBOARD && input.value && input.id == SDLK_r && SDL_GetModState() & KMOD_LCTRL && SettingsManager::getInstance()->getBool("Debug"))
 		{
 			LOG(LogInfo) << " Reloading SystemList view";
 
@@ -280,7 +280,7 @@ void SystemView::onCursorChanged(const CursorState& state)
 		return;
 
 	Animation* anim;
-	if(Settings::getInstance()->getString("TransitionStyle") == "fade")
+	if(SettingsManager::getInstance()->getString("TransitionStyle") == "fade")
 	{
 		float startExtrasFade = mExtrasFadeOpacity;
 		anim = new LambdaAnimation(

@@ -51,19 +51,19 @@ GuiGamelistOptions::GuiGamelistOptions(Window* window, SystemData* system) : Gui
 	mMenu.addWithLabel(_("SORT GAMES BY"), mListSort);
 
 	auto favorite_only = std::make_shared<SwitchComponent>(mWindow);
-	favorite_only->setState(Settings::getInstance()->getBool("FavoritesOnly"));
+	favorite_only->setState(SettingsManager::getInstance()->getBool("FavoritesOnly"));
 	mMenu.addWithLabel(_("FAVORITES ONLY"), favorite_only);
-	addSaveFunc([favorite_only] { Settings::getInstance()->setBool("FavoritesOnly", favorite_only->getState()); });
+	addSaveFunc([favorite_only] { SettingsManager::getInstance()->setBool("FavoritesOnly", favorite_only->getState()); });
 
 	auto show_hidden = std::make_shared<SwitchComponent>(mWindow);
-	show_hidden->setState(Settings::getInstance()->getBool("ShowHidden"));
+	show_hidden->setState(SettingsManager::getInstance()->getBool("ShowHidden"));
 	mMenu.addWithLabel(_("SHOW HIDDEN"), show_hidden);
-	addSaveFunc([show_hidden] { Settings::getInstance()->setBool("ShowHidden", show_hidden->getState()); });
+	addSaveFunc([show_hidden] { SettingsManager::getInstance()->setBool("ShowHidden", show_hidden->getState()); });
 
 	// edit game metadata
 	row.elements.clear();
 
-	if(RecalboxConf::getInstance()->get("system.es.menu") != "none" && RecalboxConf::getInstance()->get("system.es.menu") != "bartop"){
+	if(SettingsManager::getInstance()->get("system.es.menu") != "none" && SettingsManager::getInstance()->get("system.es.menu") != "bartop"){
 	  row.addElement(std::make_shared<TextComponent>(mWindow, _("EDIT THIS GAME'S METADATA"), Font::get(FONT_SIZE_MEDIUM), 0x777777FF), true);
 		row.addElement(makeArrow(mWindow), false);
 		row.makeAcceptInputHandler(std::bind(&GuiGamelistOptions::openMetaDataEd, this));
@@ -75,8 +75,8 @@ GuiGamelistOptions::GuiGamelistOptions(Window* window, SystemData* system) : Gui
 	setSize((float)Renderer::getScreenWidth(), (float)Renderer::getScreenHeight());
 	mMenu.setPosition((mSize.x() - mMenu.getSize().x()) / 2, (mSize.y() - mMenu.getSize().y()) / 2);
 
-	mFavoriteState = Settings::getInstance()->getBool("FavoritesOnly");
-	mHiddenState = Settings::getInstance()->getBool("ShowHidden");
+	mFavoriteState = SettingsManager::getInstance()->getBool("FavoritesOnly");
+	mHiddenState = SettingsManager::getInstance()->getBool("ShowHidden");
 }
 
 GuiGamelistOptions::~GuiGamelistOptions()
@@ -88,7 +88,7 @@ GuiGamelistOptions::~GuiGamelistOptions()
 	// notify that the root folder was sorted
 	getGamelist()->onFileChanged(root, FILE_SORTED);
 
-	if (Settings::getInstance()->getBool("FavoritesOnly") != mFavoriteState || Settings::getInstance()->getBool("ShowHidden") != mHiddenState)
+	if (SettingsManager::getInstance()->getBool("FavoritesOnly") != mFavoriteState || SettingsManager::getInstance()->getBool("ShowHidden") != mHiddenState)
 	{
 		ViewController::get()->setAllInvalidGamesList(getGamelist()->getCursor()->getSystem());
 		ViewController::get()->reloadGameListView(getGamelist()->getCursor()->getSystem());
@@ -178,5 +178,5 @@ void GuiGamelistOptions::save()
 	for (auto it = mSaveFuncs.begin(); it != mSaveFuncs.end(); it++)
 		(*it)();
 
-	Settings::getInstance()->saveFile();
+	SettingsManager::getInstance()->save();
 }

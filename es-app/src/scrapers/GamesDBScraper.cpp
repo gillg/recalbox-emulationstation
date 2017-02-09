@@ -149,7 +149,7 @@ void TheGamesDBRequest::process(const std::unique_ptr<HttpReq>& req, std::vector
 		result.mdl.set("genre", game.child("Genres").first_child().text().get());
 		result.mdl.set("players", game.child("Players").text().get());
 
-		if(Settings::getInstance()->getBool("ScrapeRatings") && game.child("Rating"))
+		if(SettingsManager::getInstance()->getBool("ScrapeRatings") && game.child("Rating"))
 		{
 			float ratingVal = (game.child("Rating").text().as_int() / 10.0f);
 			std::stringstream ss;

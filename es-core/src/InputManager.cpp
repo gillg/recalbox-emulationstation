@@ -48,8 +48,8 @@ void InputManager::init()
 	if(initialized())
 		deinit();
 
-	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, 
-		Settings::getInstance()->getBool("BackgroundJoystickInput") ? "1" : "0");
+	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS,
+				SettingsManager::getInstance()->getBool("BackgroundJoystickInput") ? "1" : "0");
 	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
 	SDL_JoystickEventState(SDL_ENABLE);
 
@@ -471,8 +471,8 @@ std::string InputManager::configureEmulators() {
 		std::string confName = sstm.str()+"NAME";
 		std::string confGuid = sstm.str()+"GUID";
 
-		std::string playerConfigName = Settings::getInstance()->getString(confName);
-		std::string playerConfigGuid = Settings::getInstance()->getString(confGuid);
+		std::string playerConfigName = SettingsManager::getInstance()->getString(confName);
+		std::string playerConfigGuid = SettingsManager::getInstance()->getString(confGuid);
 
         for (std::list<InputConfig *>::iterator it1=availableConfigured.begin(); it1!=availableConfigured.end(); ++it1)
         {
@@ -494,7 +494,7 @@ std::string InputManager::configureEmulators() {
 		sstm << "INPUT P" << player+1;
 		std::string confName = sstm.str()+"NAME";
 
-		std::string playerConfigName = Settings::getInstance()->getString(confName);
+		std::string playerConfigName = SettingsManager::getInstance()->getString(confName);
 
 		for (std::list<InputConfig *>::iterator it1=availableConfigured.begin(); it1!=availableConfigured.end(); ++it1)
 		{

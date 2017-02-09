@@ -67,6 +67,8 @@ public:
 
     bool forgetBluetoothControllers();
 
+    bool isRecalBoxSystem();
+
 private:
     static RecalboxSystem *instance;
 

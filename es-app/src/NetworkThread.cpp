@@ -33,7 +33,7 @@ void NetworkThread::run(){
             boost::this_thread::sleep(boost::posix_time::hours(1));
         }
 
-	if(RecalboxConf::getInstance()->get("updates.enabled") == "1") {
+	if(SettingsManager::getInstance()->get("updates.enabled") == "1") {
 	  if(RecalboxSystem::getInstance()->canUpdate()){
 	    mWindow->displayMessage(_("AN UPDATE IS AVAILABLE FOR YOUR RECALBOX"));
 	    mRunning = false;

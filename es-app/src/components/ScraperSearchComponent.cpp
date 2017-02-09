@@ -451,7 +451,7 @@ void ScraperSearchComponent::openInputScreen(ScraperSearchParams& params)
 		search(params);
 	};
 
-	bool openOSK = Settings::getInstance()->getBool("UseOSK");
+	bool openOSK = SettingsManager::getInstance()->getBool("UseOSK");
 
 	stop();
 	if (openOSK) {

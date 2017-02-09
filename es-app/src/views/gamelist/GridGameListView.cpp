@@ -42,7 +42,7 @@ void GridGameListView::populateList(const std::vector<FileData*>& files)
 	mGrid.clear();
 	for(auto it = files.begin(); it != files.end(); it++)
 	{
-		if (Settings::getInstance()->getBool("FavoritesOnly"))
+		if (SettingsManager::getInstance()->getBool("FavoritesOnly"))
 		{
 			if ((*it)->metadata.get("favorite").compare("true") == 0)
 			{
@@ -66,7 +66,7 @@ std::vector<HelpPrompt> GridGameListView::getHelpPrompts()
 	std::vector<HelpPrompt> prompts;
 	prompts.push_back(HelpPrompt("up/down/left/right", _("SCROLL")));
 	prompts.push_back(HelpPrompt("b", _("LAUNCH")));
-	if(!Settings::getInstance()->getBool("HideSystemView"))
+	if(!SettingsManager::getInstance()->getBool("HideSystemView"))
 	  prompts.push_back(HelpPrompt("a", _("BACK")));
 	return prompts;
 }

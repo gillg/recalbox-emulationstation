@@ -464,12 +464,12 @@ fs::path ThemeData::getThemeFromCurrentSet(const std::string& system)
 		return "";
 	}
 
-	auto set = themeSets.find(Settings::getInstance()->getString("ThemeSet"));
+	auto set = themeSets.find(SettingsManager::getInstance()->getString("ThemeSet"));
 	if(set == themeSets.end())
 	{
 		// currently selected theme set is missing, so just pick the first available set
 		set = themeSets.begin();
-		Settings::getInstance()->setString("ThemeSet", set->first);
+		SettingsManager::getInstance()->setString("ThemeSet", set->first);
 	}
 
 	return set->second.getThemePath(system);

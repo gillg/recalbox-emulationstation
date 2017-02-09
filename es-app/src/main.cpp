@@ -57,31 +57,31 @@ bool parseArgs(int argc, char* argv[], unsigned int* width, unsigned int* height
 			i += 2; // skip the argument value
 		}else if(strcmp(argv[i], "--gamelist-only") == 0)
 		{
-			Settings::getInstance()->setBool("ParseGamelistOnly", true);
+			SettingsManager::getInstance()->setBool("ParseGamelistOnly", true);
 		}else if(strcmp(argv[i], "--ignore-gamelist") == 0)
 		{
-			Settings::getInstance()->setBool("IgnoreGamelist", true);
+			SettingsManager::getInstance()->setBool("IgnoreGamelist", true);
 		}else if(strcmp(argv[i], "--draw-framerate") == 0)
 		{
-			Settings::getInstance()->setBool("DrawFramerate", true);
+			SettingsManager::getInstance()->setBool("DrawFramerate", true);
 		}else if(strcmp(argv[i], "--no-exit") == 0)
 		{
-			Settings::getInstance()->setBool("ShowExit", false);
+			SettingsManager::getInstance()->setBool("ShowExit", false);
 		}else if(strcmp(argv[i], "--hide-systemview") == 0)
 		{
-			Settings::getInstance()->setBool("HideSystemView", true);
+			SettingsManager::getInstance()->setBool("HideSystemView", true);
 		}else if(strcmp(argv[i], "--debug") == 0)
 		{
-			Settings::getInstance()->setBool("Debug", true);
-			Settings::getInstance()->setBool("HideConsole", false);
+			SettingsManager::getInstance()->setBool("Debug", true);
+			SettingsManager::getInstance()->setBool("HideConsole", false);
 			Log::setReportingLevel(LogDebug);
 		}else if(strcmp(argv[i], "--windowed") == 0)
 		{
-			Settings::getInstance()->setBool("Windowed", true);
+			SettingsManager::getInstance()->setBool("Windowed", true);
 		}else if(strcmp(argv[i], "--vsync") == 0)
 		{
 			bool vsync = (strcmp(argv[i + 1], "on") == 0 || strcmp(argv[i + 1], "1") == 0) ? true : false;
-			Settings::getInstance()->setBool("VSync", vsync);
+			SettingsManager::getInstance()->setBool("VSync", vsync);
 			i++; // skip vsync value
 		}else if(strcmp(argv[i], "--scrape") == 0)
 		{
@@ -220,6 +220,9 @@ int main(int argc, char* argv[])
 
 	//std::locale::global(boost::locale::generator().generate(""));
 	//boost::filesystem::path::imbue(std::locale());
+	if (RecalboxSystem::getInstance()->isRecalBoxSystem()) {
+		SettingsManager::init("RecalboxConf");
+	}
 
 	if(!parseArgs(argc, argv, &width, &height))
 		return 0;
@@ -227,8 +230,8 @@ int main(int argc, char* argv[])
 	// only show the console on Windows if HideConsole is false
 #ifdef WIN32
 	// MSVC has a "SubSystem" option, with two primary options: "WINDOWS" and "CONSOLE".
-	// In "WINDOWS" mode, no console is automatically created for us.  This is good, 
-	// because we can choose to only create the console window if the user explicitly 
+	// In "WINDOWS" mode, no console is automatically created for us.  This is good,
+	// because we can choose to only create the console window if the user explicitly
 	// asks for it, preventing it from flashing open and then closing.
 	// In "CONSOLE" mode, a console is always automatically created for us before we
 	// enter main. In this case, we can only hide the console after the fact, which
@@ -250,7 +253,7 @@ int main(int argc, char* argv[])
 	}else{
 		// we want to hide the console
 		// if we're compiled with the "WINDOWS" subsystem, this is already done.
-		// if we're compiled with the "CONSOLE" subsystem, a console is already created; 
+		// if we're compiled with the "CONSOLE" subsystem, a console is already created;
 		// it'll flash open, but we hide it nearly immediately
 		if(GetConsoleWindow()) // should only pass in "CONSOLE" mode
 			ShowWindow(GetConsoleWindow(), SW_HIDE);
@@ -323,27 +326,29 @@ int main(int argc, char* argv[])
 			}));
 	}
 
-	RecalboxConf* recalboxConf = RecalboxConf::getInstance();
-	if(recalboxConf->get("kodi.enabled") == "1" && recalboxConf->get("kodi.atstartup") == "1"){
-		RecalboxSystem::getInstance()->launchKodi(&window);
-	}
-	RecalboxSystem::getInstance()->getIpAdress();
-	// UPDATED VERSION MESSAGE
-    std::string changelog = RecalboxSystem::getInstance()->getChangelog();
-    if (changelog != "") {
-		std::string message = _("THE SYSTEM IS UP TO DATE:") + "\n" + changelog;
-        window.pushGui(
-                new GuiMsgBoxScroll(
-                        &window,
-						message, _("OK"),
-                        [] {
-                            RecalboxSystem::getInstance()->updateLastChangelogFile();
-                        }, "", nullptr, "", nullptr, ALIGN_LEFT));
-    }
+	if (RecalboxSystem::getInstance()->isRecalBoxSystem()) {
+		SettingsManager *recalboxConf = SettingsManager::getInstance();
+		if (recalboxConf->get("kodi.enabled") == "1" && recalboxConf->get("kodi.atstartup") == "1") {
+			RecalboxSystem::getInstance()->launchKodi(&window);
+		}
+		RecalboxSystem::getInstance()->getIpAdress();
+		// UPDATED VERSION MESSAGE
+		std::string changelog = RecalboxSystem::getInstance()->getChangelog();
+		if (changelog != "") {
+			std::string message = _("THE SYSTEM IS UP TO DATE:") + "\n" + changelog;
+			window.pushGui(
+					new GuiMsgBoxScroll(
+							&window,
+							message, _("OK"),
+							[] {
+								RecalboxSystem::getInstance()->updateLastChangelogFile();
+							}, "", nullptr, "", nullptr, ALIGN_LEFT));
+		}
 
-	// UPDATE CHECK THREAD
-	if(recalboxConf->get("updates.enabled") == "1"){
-		NetworkThread * nthread = new NetworkThread(&window);
+		// UPDATE CHECK THREAD
+		if (recalboxConf->get("updates.enabled") == "1") {
+			NetworkThread *nthread = new NetworkThread(&window);
+		}
 	}
 
 	//run the command line scraper then quit
@@ -411,12 +416,12 @@ int main(int argc, char* argv[])
 				case RecalboxSystem::SDL_FAST_QUIT | RecalboxSystem::SDL_RB_REBOOT:
 					running = false;
 					doReboot = true;
-					Settings::getInstance()->setBool("IgnoreGamelist", true);
+					SettingsManager::getInstance()->setBool("IgnoreGamelist", true);
 					break;
 				case RecalboxSystem::SDL_FAST_QUIT | RecalboxSystem::SDL_RB_SHUTDOWN:
 					running = false;
 					doShutdown = true;
-					Settings::getInstance()->setBool("IgnoreGamelist", true);
+					SettingsManager::getInstance()->setBool("IgnoreGamelist", true);
 					break;
 				case SDL_QUIT | RecalboxSystem::SDL_RB_REBOOT:
 					running = false;
@@ -475,7 +480,7 @@ int main(int argc, char* argv[])
 }
 
 void playSound(std::string name) {
-	std::string selectedTheme = Settings::getInstance()->getString("ThemeSet");
+	std::string selectedTheme = SettingsManager::getInstance()->getString("ThemeSet");
 	std::string loadingMusic = getHomePath()+"/.emulationstation/themes/"+selectedTheme+"/fx/"+name+".ogg";
 	if(boost::filesystem::exists(loadingMusic)){
 		Music::get(loadingMusic)->play(false, NULL);

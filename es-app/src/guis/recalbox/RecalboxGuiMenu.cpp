@@ -10,7 +10,7 @@
 #include <LibretroRatio.h>
 
 #include "EmulationStation.h"
-#include "guis/GuiMenu.h"
+#include "guis/recalbox/RecalboxGuiMenu.h"
 #include "Window.h"
 #include "Sound.h"
 #include "Log.h"
@@ -36,11 +36,11 @@
 
 #include "guis/GuiTextEditPopup.h"
 #include "guis/GuiTextEditPopupKeyboard.h"
-#include "GuiLoading.h"
+#include "guis/GuiLoading.h"
 
 #include "RecalboxConf.h"
 
-void GuiMenu::createInputTextRow(GuiSettings *gui, std::string title, const char *settingsID, bool password) {
+void RecalboxGuiMenu::createInputTextRow(GuiSettings *gui, std::string title, const char *settingsID, bool password) {
     // LABEL
     Window *window = mWindow;
     ComponentListRow row;
@@ -51,8 +51,8 @@ void GuiMenu::createInputTextRow(GuiSettings *gui, std::string title, const char
     std::shared_ptr<GuiComponent> ed;
 
     ed = std::make_shared<TextComponent>(window, ((password &&
-                                                   RecalboxConf::getInstance()->get(settingsID) != "")
-                                                  ? "*********" : RecalboxConf::getInstance()->get(
+                                                   SettingsManager::getInstance()->get(settingsID) != "")
+                                                  ? "*********" : SettingsManager::getInstance()->get(
                     settingsID)), Font::get(FONT_SIZE_MEDIUM, FONT_PATH_LIGHT), 0x777777FF, ALIGN_RIGHT);
     row.addElement(ed, true);
 
@@ -71,24 +71,24 @@ void GuiMenu::createInputTextRow(GuiSettings *gui, std::string title, const char
         else {
             ed->setValue("*********");
         }
-        RecalboxConf::getInstance()->set(settingsID, newVal);
+        SettingsManager::getInstance()->set(settingsID, newVal);
     }; // ok callback (apply new value to ed)
     
     row.makeAcceptInputHandler([this, title, updateVal, settingsID] {
-        if (Settings::getInstance()->getBool("UseOSK")) {
+        if (SettingsManager::getInstance()->getBool("UseOSK")) {
             mWindow->pushGui(
-                new GuiTextEditPopupKeyboard(mWindow, title, RecalboxConf::getInstance()->get(settingsID),
-                                        updateVal, false));
+                    new GuiTextEditPopupKeyboard(mWindow, title, SettingsManager::getInstance()->get(settingsID),
+                                                 updateVal, false));
         } else {
             mWindow->pushGui(
-                new GuiTextEditPopup(mWindow, title, RecalboxConf::getInstance()->get(settingsID),
-                                       updateVal, false));
+                    new GuiTextEditPopup(mWindow, title, SettingsManager::getInstance()->get(settingsID),
+                                         updateVal, false));
         }
     });
     gui->addRow(row);
 }
 
-GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN MENU").c_str()), mVersion(window) {
+RecalboxGuiMenu::RecalboxGuiMenu(Window *window) : GuiMenu(window), mMenu(window, _("MAIN MENU").c_str()), mVersion(window) {
     // MAIN MENU
 
     // KODI >
@@ -101,8 +101,8 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
     // NETWORK >
     // SCRAPER >
     // QUIT >
-    if (RecalboxConf::getInstance()->get("kodi.enabled") == "1") {
-      addEntry(_("KODI MEDIA CENTER").c_str(), 0x777777FF, true,
+    if (SettingsManager::getInstance()->get("kodi.enabled") == "1") {
+        addEntry(_("KODI MEDIA CENTER").c_str(), 0x777777FF, true,
                  [this] {
                      Window *window = mWindow;
 
@@ -111,13 +111,13 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                      }
                  });
     }
-    if (Settings::getInstance()->getBool("RomsManager")) {
-      addEntry("ROMS MANAGER", 0x777777FF, true, [this] {
+    if (SettingsManager::getInstance()->getBool("RomsManager")) {
+        addEntry("ROMS MANAGER", 0x777777FF, true, [this] {
             mWindow->pushGui(new GuiRomsManager(mWindow));
         });
     }
-    if (RecalboxConf::getInstance()->get("system.es.menu") != "bartop") {
-      addEntry(_("SYSTEM SETTINGS").c_str(), 0x777777FF, true,
+    if (RecalboxSystem::getInstance()->isRecalBoxSystem() && SettingsManager::getInstance()->get("system.es.menu") != "bartop") {
+        addEntry(_("SYSTEM SETTINGS").c_str(), 0x777777FF, true,
                  [this] {
                      Window *window = mWindow;
 
@@ -159,11 +159,11 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                      // language choice
                      auto language_choice = std::make_shared<OptionListComponent<std::string> >(window, _("LANGUAGE"),
                                                                                                 false);
-                     std::string language = RecalboxConf::getInstance()->get("system.language");
+                     std::string language = SettingsManager::getInstance()->get("system.language");
                      if (language.empty()) language = "en_US";
                      language_choice->add("BASQUE",              "eu_ES", language == "eu_ES");
-                     language_choice->add("正體中文",              "zh_TW", language == "zh_TW");
-                     language_choice->add("简体中文",                 "zh_CN", language == "zh_CN");
+                     language_choice->add("正體中文",             "zh_TW", language == "zh_TW");
+                     language_choice->add("简体中文",             "zh_CN", language == "zh_CN");
                      language_choice->add("DEUTSCH",             "de_DE", language == "de_DE");
                      language_choice->add("ENGLISH",             "en_US", language == "en_US");
                      language_choice->add("ESPAÑOL",             "es_ES", language == "es_ES");
@@ -179,7 +179,10 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                      language_choice->add("KOREAN",              "ko_KR", language == "ko_KR");
                      language_choice->add("NORWEGIAN",           "nn_NO", language == "nn_NO");
                      language_choice->add("NORWEGIAN BOKMAL",    "nb_NO", language == "nb_NO");
-                     language_choice->add("POLISH",    "pl", language == "pl");
+                     language_choice->add("POLISH",              "pl_PL", language == "pl_PL");
+                     language_choice->add("JAPANESE",            "jp_JP", language == "jp_JP");
+                     language_choice->add("RUSSIAN",             "ru_RU", language == "ru_RU");
+                     language_choice->add("HUNGARIAN",           "hu_HU", language == "hu_HU");
 
                      s->addWithLabel(_("LANGUAGE"), language_choice);
 
@@ -188,13 +191,13 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                                                                                                  false);
 #ifdef RPI_VERSION
 #if RPI_VERSION == 1
-                     std::string currentOverclock = Settings::getInstance()->getString("Overclock");
+                     std::string currentOverclock = SettingsManager::getInstance()->getString("Overclock");
                      overclock_choice->add(_("EXTREM (1100Mhz)"), "extrem", currentOverclock == "extrem");
                      overclock_choice->add(_("TURBO (1000Mhz)"), "turbo", currentOverclock == "turbo");
                      overclock_choice->add(_("HIGH (950Mhz)"), "high", currentOverclock == "high");
                      overclock_choice->add(_("NONE"), "none", currentOverclock == "none");
 #elif RPI_VERSION == 2
-                     std::string currentOverclock = Settings::getInstance()->getString("Overclock");
+                     std::string currentOverclock = SettingsManager::getInstance()->getString("Overclock");
                      //overclock_choice->add(_("EXTREM (1100Mhz)"), "rpi2-extrem", currentOverclock == "rpi2-extrem");
                      //overclock_choice->add(_("TURBO (1050Mhz)+"), "rpi2-turbo", currentOverclock == "rpi2-turbo");
                      overclock_choice->add(_("HIGH (1050Mhz)"), "rpi2-high", currentOverclock == "rpi2-high");
@@ -215,8 +218,8 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                              // Enable updates
                              auto updates_enabled = std::make_shared<SwitchComponent>(mWindow);
                              updates_enabled->setState(
-                                     RecalboxConf::getInstance()->get("updates.enabled") == "1");
-			   updateGui->addWithLabel(_("AUTO UPDATES"), updates_enabled);
+                                     SettingsManager::getInstance()->get("updates.enabled") == "1");
+                             updateGui->addWithLabel(_("AUTO UPDATES"), updates_enabled);
 
                              // Start update
                              {
@@ -232,9 +235,9 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                                  updateGui->addRow(updateRow);
                              }
                              updateGui->addSaveFunc([updates_enabled] {
-                                 RecalboxConf::getInstance()->set("updates.enabled",
-                                                                  updates_enabled->getState() ? "1" : "0");
-                                 RecalboxConf::getInstance()->saveRecalboxConf();
+                                 SettingsManager::getInstance()->set("updates.enabled",
+                                                                     updates_enabled->getState() ? "1" : "0");
+                                 SettingsManager::getInstance()->save();
                              });
                              mWindow->pushGui(updateGui);
 
@@ -253,25 +256,25 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                      {
                          ComponentListRow row;
                          std::function<void()> openGui = [this] {
-			   GuiSettings *kodiGui = new GuiSettings(mWindow, _("KODI SETTINGS").c_str());
+                             GuiSettings *kodiGui = new GuiSettings(mWindow, _("KODI SETTINGS").c_str());
                              auto kodiEnabled = std::make_shared<SwitchComponent>(mWindow);
-                             kodiEnabled->setState(RecalboxConf::getInstance()->get("kodi.enabled") == "1");
-			   kodiGui->addWithLabel(_("ENABLE KODI"), kodiEnabled);
+                             kodiEnabled->setState(SettingsManager::getInstance()->get("kodi.enabled") == "1");
+                             kodiGui->addWithLabel(_("ENABLE KODI"), kodiEnabled);
                              auto kodiAtStart = std::make_shared<SwitchComponent>(mWindow);
                              kodiAtStart->setState(
-                                     RecalboxConf::getInstance()->get("kodi.atstartup") == "1");
-			   kodiGui->addWithLabel(_("KODI AT START"), kodiAtStart);
+                                     SettingsManager::getInstance()->get("kodi.atstartup") == "1");
+                             kodiGui->addWithLabel(_("KODI AT START"), kodiAtStart);
                              auto kodiX = std::make_shared<SwitchComponent>(mWindow);
-                             kodiX->setState(RecalboxConf::getInstance()->get("kodi.xbutton") == "1");
-			   kodiGui->addWithLabel(_("START KODI WITH X"), kodiX);
+                             kodiX->setState(SettingsManager::getInstance()->get("kodi.xbutton") == "1");
+                             kodiGui->addWithLabel(_("START KODI WITH X"), kodiX);
                              kodiGui->addSaveFunc([kodiEnabled, kodiAtStart, kodiX] {
-                                 RecalboxConf::getInstance()->set("kodi.enabled",
-                                                                  kodiEnabled->getState() ? "1" : "0");
-                                 RecalboxConf::getInstance()->set("kodi.atstartup",
-                                                                  kodiAtStart->getState() ? "1" : "0");
-                                 RecalboxConf::getInstance()->set("kodi.xbutton",
-                                                                  kodiX->getState() ? "1" : "0");
-                                 RecalboxConf::getInstance()->saveRecalboxConf();
+                                 SettingsManager::getInstance()->set("kodi.enabled",
+                                                                     kodiEnabled->getState() ? "1" : "0");
+                                 SettingsManager::getInstance()->set("kodi.atstartup",
+                                                                     kodiAtStart->getState() ? "1" : "0");
+                                 SettingsManager::getInstance()->set("kodi.xbutton",
+                                                                     kodiX->getState() ? "1" : "0");
+                                 SettingsManager::getInstance()->save();
                              });
                              mWindow->pushGui(kodiGui);
                          };
@@ -288,39 +291,39 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                      {
                          ComponentListRow row;
                          std::function<void()> openGui = [this] {
-			   GuiSettings *securityGui = new GuiSettings(mWindow, _("SECURITY").c_str());
-			   auto securityEnabled = std::make_shared<SwitchComponent>(mWindow);
-			   securityEnabled->setState(RecalboxConf::getInstance()->get("system.security.enabled") == "1");
-			   securityGui->addWithLabel(_("ENFORCE SECURITY"), securityEnabled);
+                             GuiSettings *securityGui = new GuiSettings(mWindow, _("SECURITY").c_str());
+                             auto securityEnabled = std::make_shared<SwitchComponent>(mWindow);
+                             securityEnabled->setState(SettingsManager::getInstance()->get("system.security.enabled") == "1");
+                             securityGui->addWithLabel(_("ENFORCE SECURITY"), securityEnabled);
 
-			   auto rootpassword = std::make_shared<TextComponent>(mWindow,
-									       RecalboxSystem::getInstance()->getRootPassword(),
-									       Font::get(FONT_SIZE_MEDIUM), 0x777777FF);
-			   securityGui->addWithLabel(_("ROOT PASSWORD"), rootpassword);
+                             auto rootpassword = std::make_shared<TextComponent>(mWindow,
+                                                                                 RecalboxSystem::getInstance()->getRootPassword(),
+                                                                                 Font::get(FONT_SIZE_MEDIUM), 0x777777FF);
+                             securityGui->addWithLabel(_("ROOT PASSWORD"), rootpassword);
 
-			   securityGui->addSaveFunc([this, securityEnabled] {
-			       Window* window = this->mWindow;
-			       bool reboot = false;
+                             securityGui->addSaveFunc([this, securityEnabled] {
+                                 Window* window = this->mWindow;
+                                 bool reboot = false;
 
-			       if (securityEnabled->changed()) {
-				 RecalboxConf::getInstance()->set("system.security.enabled",
-								  securityEnabled->getState() ? "1" : "0");
-				 RecalboxConf::getInstance()->saveRecalboxConf();
-				 reboot = true;
-			       }
+                                 if (securityEnabled->changed()) {
+                                     SettingsManager::getInstance()->set("system.security.enabled",
+                                                                         securityEnabled->getState() ? "1" : "0");
+                                     SettingsManager::getInstance()->save();
+                                     reboot = true;
+                                 }
 
-			       if (reboot) {
-			       	 window->pushGui(
-						 new GuiMsgBox(window, _("THE SYSTEM WILL NOW REBOOT"), _("OK"),
-							       [window] {
-								 if (runRestartCommand() != 0) {
-								   LOG(LogWarning) << "Reboot terminated with non-zero result!";
-								 }
-							       })
-						 );
-			       }
+                                 if (RecalboxSystem::getInstance()->isRecalBoxSystem() && reboot) {
+                                     window->pushGui(
+                                             new GuiMsgBox(window, _("THE SYSTEM WILL NOW REBOOT"), _("OK"),
+                                                           [window] {
+                                                               if (runRestartCommand() != 0) {
+                                                                   LOG(LogWarning) << "Reboot terminated with non-zero result!";
+                                                               }
+                                                           })
+                                     );
+                                 }
                              });
-			   mWindow->pushGui(securityGui);
+                             mWindow->pushGui(securityGui);
                          };
                          row.makeAcceptInputHandler(openGui);
                          auto securitySettings = std::make_shared<TextComponent>(mWindow, _("SECURITY"),
@@ -338,29 +341,30 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                              reboot = true;
                          }
 
-                         if (Settings::getInstance()->getString("Overclock") != overclock_choice->getSelected()) {
-                             Settings::getInstance()->setString("Overclock", overclock_choice->getSelected());
+                         if (SettingsManager::getInstance()->getString("Overclock") != overclock_choice->getSelected()) {
+                             SettingsManager::getInstance()->setString("Overclock", overclock_choice->getSelected());
                              RecalboxSystem::getInstance()->setOverclock(overclock_choice->getSelected());
                              reboot = true;
                          }
                          if (language != language_choice->getSelected()) {
-                             RecalboxConf::getInstance()->set("system.language",
-                                                              language_choice->getSelected());
-                             RecalboxConf::getInstance()->saveRecalboxConf();
+                             SettingsManager::getInstance()->set("system.language",
+                                                                 language_choice->getSelected());
+                             SettingsManager::getInstance()->save();
                              reboot = true;
                          }
-                         if (reboot) {
+                         if (RecalboxSystem::getInstance()->isRecalBoxSystem() && reboot) {
                              window->pushGui(
-					     new GuiMsgBox(window, _("THE SYSTEM WILL NOW REBOOT"), _("OK"),
-                                           [window] {
-                                               if (runRestartCommand() != 0) {
-                                                   LOG(LogWarning) << "Reboot terminated with non-zero result!";
-                                               }
-                                           })
+                                     new GuiMsgBox(window, _("THE SYSTEM WILL NOW REBOOT"), _("OK"),
+                                                   [window] {
+                                                       if (runRestartCommand() != 0) {
+                                                           LOG(LogWarning) << "Reboot terminated with non-zero result!";
+                                                       }
+                                                   })
                              );
                          }
 
                      });
+
                      mWindow->pushGui(s);
 
                  });
@@ -369,36 +373,36 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
     addEntry(_("GAMES SETTINGS").c_str(), 0x777777FF, true,
              [this] {
                  auto s = new GuiSettings(mWindow, _("GAMES SETTINGS").c_str());
-                 if (RecalboxConf::getInstance()->get("system.es.menu") != "bartop") {
+                 if (SettingsManager::getInstance()->get("system.es.menu") != "bartop") {
 
                      // Screen ratio choice
                      auto ratio_choice = createRatioOptionList(mWindow, "global");
                      s->addWithLabel(_("GAME RATIO"), ratio_choice);
                      s->addSaveFunc([ratio_choice] {
-                         RecalboxConf::getInstance()->set("global.ratio", ratio_choice->getSelected());
-                         RecalboxConf::getInstance()->saveRecalboxConf();
+                         SettingsManager::getInstance()->set("global.ratio", ratio_choice->getSelected());
+                         SettingsManager::getInstance()->save();
                      });
                  }
                  // smoothing
                  auto smoothing_enabled = std::make_shared<SwitchComponent>(mWindow);
-                 smoothing_enabled->setState(RecalboxConf::getInstance()->get("global.smooth") == "1");
+                 smoothing_enabled->setState(SettingsManager::getInstance()->get("global.smooth") == "1");
                  s->addWithLabel(_("SMOOTH GAMES"), smoothing_enabled);
 
                  // rewind
                  auto rewind_enabled = std::make_shared<SwitchComponent>(mWindow);
-                 rewind_enabled->setState(RecalboxConf::getInstance()->get("global.rewind") == "1");
+                 rewind_enabled->setState(SettingsManager::getInstance()->get("global.rewind") == "1");
                  s->addWithLabel(_("REWIND"), rewind_enabled);
 
                  // autosave/load
                  auto autosave_enabled = std::make_shared<SwitchComponent>(mWindow);
-                 autosave_enabled->setState(RecalboxConf::getInstance()->get("global.autosave") == "1");
+                 autosave_enabled->setState(SettingsManager::getInstance()->get("global.autosave") == "1");
                  s->addWithLabel(_("AUTO SAVE/LOAD"), autosave_enabled);
 
                  // Shaders preset
 
                  auto shaders_choices = std::make_shared<OptionListComponent<std::string> >(mWindow, _("SHADERS SET"),
                                                                                             false);
-                 std::string currentShader = RecalboxConf::getInstance()->get("global.shaderset");
+                 std::string currentShader = SettingsManager::getInstance()->get("global.shaderset");
                  if (currentShader.empty()) {
                      currentShader = std::string("none");
                  }
@@ -409,11 +413,11 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                  s->addWithLabel(_("SHADERS SET"), shaders_choices);
                  // Integer scale
                  auto integerscale_enabled = std::make_shared<SwitchComponent>(mWindow);
-                 integerscale_enabled->setState(RecalboxConf::getInstance()->get("global.integerscale") == "1");
+                 integerscale_enabled->setState(SettingsManager::getInstance()->get("global.integerscale") == "1");
                  s->addWithLabel(_("INTEGER SCALE (PIXEL PERFECT)"), integerscale_enabled);
                  s->addSaveFunc([integerscale_enabled] {
-                     RecalboxConf::getInstance()->set("global.integerscale", integerscale_enabled->getState() ? "1" : "0");
-                     RecalboxConf::getInstance()->saveRecalboxConf();
+                     SettingsManager::getInstance()->set("global.integerscale", integerscale_enabled->getState() ? "1" : "0");
+                     SettingsManager::getInstance()->save();
                  });
 
                  shaders_choices->setSelectedChangedCallback([integerscale_enabled] (std::string selectedShader){
@@ -421,7 +425,7 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                  });
 
 
-                 if (RecalboxConf::getInstance()->get("system.es.menu") != "bartop") {
+                 if (SettingsManager::getInstance()->get("system.es.menu") != "bartop") {
 
                      // Retroachievements
                      {
@@ -432,13 +436,13 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                              // retroachievements_enable
                              auto retroachievements_enabled = std::make_shared<SwitchComponent>(mWindow);
                              retroachievements_enabled->setState(
-                                     RecalboxConf::getInstance()->get("global.retroachievements") == "1");
+                                     SettingsManager::getInstance()->get("global.retroachievements") == "1");
                              retroachievements->addWithLabel(_("RETROACHIEVEMENTS"), retroachievements_enabled);
 
                              // retroachievements_hardcore_mode
                              auto retroachievements_hardcore_enabled = std::make_shared<SwitchComponent>(mWindow);
                              retroachievements_hardcore_enabled->setState(
-                                     RecalboxConf::getInstance()->get("global.retroachievements.hardcore") == "1");
+                                     SettingsManager::getInstance()->get("global.retroachievements.hardcore") == "1");
                              retroachievements->addWithLabel(_("HARDCORE MODE"), retroachievements_hardcore_enabled);
 
                              // retroachievements, username, password
@@ -449,11 +453,11 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
 
 
                              retroachievements->addSaveFunc([retroachievements_enabled, retroachievements_hardcore_enabled] {
-                                 RecalboxConf::getInstance()->set("global.retroachievements",
-                                                                  retroachievements_enabled->getState() ? "1" : "0");
-                                 RecalboxConf::getInstance()->set("global.retroachievements.hardcore",
-                                                                  retroachievements_hardcore_enabled->getState() ? "1" : "0");
-                                 RecalboxConf::getInstance()->saveRecalboxConf();
+                                 SettingsManager::getInstance()->set("global.retroachievements",
+                                                                     retroachievements_enabled->getState() ? "1" : "0");
+                                 SettingsManager::getInstance()->set("global.retroachievements.hardcore",
+                                                                     retroachievements_hardcore_enabled->getState() ? "1" : "0");
+                                 SettingsManager::getInstance()->save();
                              });
                              mWindow->pushGui(retroachievements);
                          };
@@ -476,7 +480,8 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                              // For each activated system
                              std::vector<SystemData *> systems = SystemData::sSystemVector;
                              for (auto system = systems.begin(); system != systems.end(); system++) {
-                                 if ((*system) != SystemData::getFavoriteSystem()) {
+                                 if ((*system) != SystemData::getFavoriteSystem()
+                                        && !(*system)->hasPlatformId(PlatformIds::SYSCONFIG)) {
                                      ComponentListRow systemRow;
                                      auto systemText = std::make_shared<TextComponent>(mWindow, (*system)->getFullName(),
                                                                                        Font::get(FONT_SIZE_MEDIUM),
@@ -535,44 +540,44 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                      }
                  }
                  s->addSaveFunc([smoothing_enabled, rewind_enabled, shaders_choices, autosave_enabled] {
-                     RecalboxConf::getInstance()->set("global.smooth", smoothing_enabled->getState() ? "1" : "0");
-                     RecalboxConf::getInstance()->set("global.rewind", rewind_enabled->getState() ? "1" : "0");
-                     RecalboxConf::getInstance()->set("global.shaderset", shaders_choices->getSelected());
-                     RecalboxConf::getInstance()->set("global.autosave", autosave_enabled->getState() ? "1" : "0");
-                     RecalboxConf::getInstance()->saveRecalboxConf();
+                     SettingsManager::getInstance()->set("global.smooth", smoothing_enabled->getState() ? "1" : "0");
+                     SettingsManager::getInstance()->set("global.rewind", rewind_enabled->getState() ? "1" : "0");
+                     SettingsManager::getInstance()->set("global.shaderset", shaders_choices->getSelected());
+                     SettingsManager::getInstance()->set("global.autosave", autosave_enabled->getState() ? "1" : "0");
+                     SettingsManager::getInstance()->save();
                  });
                  mWindow->pushGui(s);
              }
 
     );
 
-    if (RecalboxConf::getInstance()->get("system.es.menu") != "bartop") {
-      addEntry(_("CONTROLLERS SETTINGS").c_str(), 0x777777FF, true, [this] { this->createConfigInput(); });
+    if (SettingsManager::getInstance()->get("system.es.menu") != "bartop") {
+        addEntry(_("CONTROLLERS SETTINGS").c_str(), 0x777777FF, true, [this] { this->createConfigInput(); });
     }
-    if (RecalboxConf::getInstance()->get("system.es.menu") != "bartop") {
+    if (SettingsManager::getInstance()->get("system.es.menu") != "bartop") {
 
-      addEntry(_("UI SETTINGS").c_str(), 0x777777FF, true,
+        addEntry(_("UI SETTINGS").c_str(), 0x777777FF, true,
                  [this] {
-		 auto s = new GuiSettings(mWindow, _("UI SETTINGS").c_str());
+                     auto s = new GuiSettings(mWindow, _("UI SETTINGS").c_str());
 
                      // overscan
                      auto overscan_enabled = std::make_shared<SwitchComponent>(mWindow);
-                     overscan_enabled->setState(Settings::getInstance()->getBool("Overscan"));
+                     overscan_enabled->setState(SettingsManager::getInstance()->getBool("Overscan"));
                      s->addWithLabel(_("OVERSCAN"), overscan_enabled);
                      s->addSaveFunc([overscan_enabled] {
-                         if (Settings::getInstance()->getBool("Overscan") != overscan_enabled->getState()) {
-                             Settings::getInstance()->setBool("Overscan", overscan_enabled->getState());
+                         if (SettingsManager::getInstance()->getBool("Overscan") != overscan_enabled->getState()) {
+                             SettingsManager::getInstance()->setBool("Overscan", overscan_enabled->getState());
                              RecalboxSystem::getInstance()->setOverscan(overscan_enabled->getState());
                          }
                      });
                      // screensaver time
                      auto screensaver_time = std::make_shared<SliderComponent>(mWindow, 0.f, 30.f, 1.f, "m");
                      screensaver_time->setValue(
-                             (float) (Settings::getInstance()->getInt("ScreenSaverTime") / (1000 * 60)));
+                             (float) (SettingsManager::getInstance()->getInt("ScreenSaverTime") / (1000 * 60)));
                      s->addWithLabel(_("SCREENSAVER AFTER"), screensaver_time);
                      s->addSaveFunc([screensaver_time] {
-                         Settings::getInstance()->setInt("ScreenSaverTime",
-                                                         (int) round(screensaver_time->getValue()) * (1000 * 60));
+                         SettingsManager::getInstance()->setInt("ScreenSaverTime",
+                                                                (int) round(screensaver_time->getValue()) * (1000 * 60));
                      });
 
                      // screensaver behavior
@@ -584,42 +589,42 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                      screensavers.push_back("black");
                      for (auto it = screensavers.begin(); it != screensavers.end(); it++)
                          screensaver_behavior->add(*it, *it,
-                                                   Settings::getInstance()->getString("ScreenSaverBehavior") == *it);
+                                                   SettingsManager::getInstance()->getString("ScreenSaverBehavior") == *it);
                      s->addWithLabel(_("SCREENSAVER BEHAVIOR"), screensaver_behavior);
                      s->addSaveFunc([screensaver_behavior] {
-                         Settings::getInstance()->setString("ScreenSaverBehavior", screensaver_behavior->getSelected());
+                         SettingsManager::getInstance()->setString("ScreenSaverBehavior", screensaver_behavior->getSelected());
                      });
 
                      // framerate
                      auto framerate = std::make_shared<SwitchComponent>(mWindow);
-                     framerate->setState(Settings::getInstance()->getBool("DrawFramerate"));
+                     framerate->setState(SettingsManager::getInstance()->getBool("DrawFramerate"));
                      s->addWithLabel(_("SHOW FRAMERATE"), framerate);
                      s->addSaveFunc(
-                             [framerate] { Settings::getInstance()->setBool("DrawFramerate", framerate->getState()); });
+                             [framerate] { SettingsManager::getInstance()->setBool("DrawFramerate", framerate->getState()); });
 
                      // show help
                      auto show_help = std::make_shared<SwitchComponent>(mWindow);
-                     show_help->setState(Settings::getInstance()->getBool("ShowHelpPrompts"));
+                     show_help->setState(SettingsManager::getInstance()->getBool("ShowHelpPrompts"));
                      s->addWithLabel(_("ON-SCREEN HELP"), show_help);
                      s->addSaveFunc(
                              [show_help] {
-                                 Settings::getInstance()->setBool("ShowHelpPrompts", show_help->getState());
+                                 SettingsManager::getInstance()->setBool("ShowHelpPrompts", show_help->getState());
                              });
 
                      // quick system select (left/right in game list view)
                      auto quick_sys_select = std::make_shared<SwitchComponent>(mWindow);
-                     quick_sys_select->setState(Settings::getInstance()->getBool("QuickSystemSelect"));
+                     quick_sys_select->setState(SettingsManager::getInstance()->getBool("QuickSystemSelect"));
                      s->addWithLabel(_("QUICK SYSTEM SELECT"), quick_sys_select);
                      s->addSaveFunc([quick_sys_select] {
-                         Settings::getInstance()->setBool("QuickSystemSelect", quick_sys_select->getState());
+                         SettingsManager::getInstance()->setBool("QuickSystemSelect", quick_sys_select->getState());
                      });
 
-                    // Enable OSK (On-Screen-Keyboard)
-                    auto osk_enable = std::make_shared<SwitchComponent>(mWindow);
-                    osk_enable->setState(Settings::getInstance()->getBool("UseOSK"));
-                    s->addWithLabel(_("ON SCREEN KEYBOARD"), osk_enable);
-                    s->addSaveFunc([osk_enable] {
-                         Settings::getInstance()->setBool("UseOSK", osk_enable->getState()); } );
+                     // Enable OSK (On-Screen-Keyboard)
+                     auto osk_enable = std::make_shared<SwitchComponent>(mWindow);
+                     osk_enable->setState(SettingsManager::getInstance()->getBool("UseOSK"));
+                     s->addWithLabel(_("ON SCREEN KEYBOARD"), osk_enable);
+                     s->addSaveFunc([osk_enable] {
+                         SettingsManager::getInstance()->setBool("UseOSK", osk_enable->getState()); } );
 
                      // transition style
                      auto transition_style = std::make_shared<OptionListComponent<std::string> >(mWindow,
@@ -629,17 +634,17 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                      transitions.push_back("fade");
                      transitions.push_back("slide");
                      for (auto it = transitions.begin(); it != transitions.end(); it++)
-                         transition_style->add(*it, *it, Settings::getInstance()->getString("TransitionStyle") == *it);
+                         transition_style->add(*it, *it, SettingsManager::getInstance()->getString("TransitionStyle") == *it);
                      s->addWithLabel(_("TRANSITION STYLE"), transition_style);
                      s->addSaveFunc([transition_style] {
-                         Settings::getInstance()->setString("TransitionStyle", transition_style->getSelected());
+                         SettingsManager::getInstance()->setString("TransitionStyle", transition_style->getSelected());
                      });
 
                      // theme set
                      auto themeSets = ThemeData::getThemeSets();
 
                      if (!themeSets.empty()) {
-                         auto selectedSet = themeSets.find(Settings::getInstance()->getString("ThemeSet"));
+                         auto selectedSet = themeSets.find(SettingsManager::getInstance()->getString("ThemeSet"));
                          if (selectedSet == themeSets.end())
                              selectedSet = themeSets.begin();
 
@@ -652,10 +657,10 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                          Window *window = mWindow;
                          s->addSaveFunc([window, theme_set] {
                              bool needReload = false;
-                             if (Settings::getInstance()->getString("ThemeSet") != theme_set->getSelected())
+                             if (SettingsManager::getInstance()->getString("ThemeSet") != theme_set->getSelected())
                                  needReload = true;
 
-                             Settings::getInstance()->setString("ThemeSet", theme_set->getSelected());
+                             SettingsManager::getInstance()->setString("ThemeSet", theme_set->getSelected());
 
                              if (needReload)
                                  ViewController::get()->reloadAll(); // TODO - replace this with some sort of signal-based implementation
@@ -668,7 +673,7 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
 
     addEntry(_("SOUND SETTINGS").c_str(), 0x777777FF, true,
              [this] {
-	       auto s = new GuiSettings(mWindow, _("SOUND SETTINGS").c_str());
+                 auto s = new GuiSettings(mWindow, _("SOUND SETTINGS").c_str());
 
                  // volume
                  auto volume = std::make_shared<SliderComponent>(mWindow, 0.f, 100.f, 1.f, "%");
@@ -677,51 +682,51 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
 
                  // disable sounds
                  auto sounds_enabled = std::make_shared<SwitchComponent>(mWindow);
-                 sounds_enabled->setState(!(RecalboxConf::getInstance()->get("audio.bgmusic") == "0"));
+                 sounds_enabled->setState(!(SettingsManager::getInstance()->get("audio.bgmusic") == "0"));
                  s->addWithLabel(_("FRONTEND MUSIC"), sounds_enabled);
 
                  auto output_list = std::make_shared<OptionListComponent<std::string> >(mWindow, _("OUTPUT DEVICE"),
                                                                                         false);
 
 
-                 std::string currentDevice = RecalboxConf::getInstance()->get("audio.device");
+                 std::string currentDevice = SettingsManager::getInstance()->get("audio.device");
                  if (currentDevice.empty()) currentDevice = "auto";
                  output_list->add(_("HDMI"), "hdmi", "hdmi" == currentDevice);
                  output_list->add(_("JACK"), "jack", "jack" == currentDevice);
                  output_list->add(_("AUTO"), "auto", "auto" == currentDevice);
 
-                 if (RecalboxConf::getInstance()->get("system.es.menu") != "bartop") {
-		   s->addWithLabel(_("OUTPUT DEVICE"), output_list);
+                 if (SettingsManager::getInstance()->get("system.es.menu") != "bartop") {
+                     s->addWithLabel(_("OUTPUT DEVICE"), output_list);
                  }
                  s->addSaveFunc([output_list, currentDevice, sounds_enabled, volume] {
 
                      VolumeControl::getInstance()->setVolume((int) round(volume->getValue()));
-                     RecalboxConf::getInstance()->set("audio.volume",
-                                                      std::to_string((int) round(volume->getValue())));
+                     SettingsManager::getInstance()->set("audio.volume",
+                                                         std::to_string((int) round(volume->getValue())));
 
-                     RecalboxConf::getInstance()->set("audio.bgmusic",
-                                                      sounds_enabled->getState() ? "1" : "0");
+                     SettingsManager::getInstance()->set("audio.bgmusic",
+                                                         sounds_enabled->getState() ? "1" : "0");
                      if (!sounds_enabled->getState())
                          AudioManager::getInstance()->stopMusic();
                      if (currentDevice != output_list->getSelected()) {
-                         RecalboxConf::getInstance()->set("audio.device", output_list->getSelected());
+                         SettingsManager::getInstance()->set("audio.device", output_list->getSelected());
                          RecalboxSystem::getInstance()->setAudioOutputDevice(output_list->getSelected());
                      }
-                     RecalboxConf::getInstance()->saveRecalboxConf();
+                     SettingsManager::getInstance()->save();
                  });
 
                  mWindow->pushGui(s);
              });
 
-    if (RecalboxConf::getInstance()->get("system.es.menu") != "bartop") {
-      addEntry(_("NETWORK SETTINGS").c_str(), 0x777777FF, true,
+    if (SettingsManager::getInstance()->get("system.es.menu") != "bartop") {
+        addEntry(_("NETWORK SETTINGS").c_str(), 0x777777FF, true,
                  [this] {
                      Window *window = mWindow;
 
                      auto s = new GuiSettings(mWindow, _("NETWORK SETTINGS").c_str());
                      auto status = std::make_shared<TextComponent>(mWindow,
                                                                    RecalboxSystem::getInstance()->ping() ? _("CONNECTED")
-								   : _("NOT CONNECTED"),
+                                                                                                         : _("NOT CONNECTED"),
                                                                    Font::get(FONT_SIZE_MEDIUM), 0x777777FF);
                      s->addWithLabel(_("STATUS"), status);
                      auto ip = std::make_shared<TextComponent>(mWindow, RecalboxSystem::getInstance()->getIpAdress(),
@@ -732,33 +737,33 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
 
                      // Wifi enable
                      auto enable_wifi = std::make_shared<SwitchComponent>(mWindow);
-                     bool baseEnabled = RecalboxConf::getInstance()->get("wifi.enabled") == "1";
+                     bool baseEnabled = SettingsManager::getInstance()->get("wifi.enabled") == "1";
                      enable_wifi->setState(baseEnabled);
                      s->addWithLabel(_("ENABLE WIFI"), enable_wifi);
 
                      // window, title, settingstring,
-                     const std::string baseSSID = RecalboxConf::getInstance()->get("wifi.ssid");
+                     const std::string baseSSID = SettingsManager::getInstance()->get("wifi.ssid");
                      createInputTextRow(s, _("WIFI SSID"), "wifi.ssid", false);
-                     const std::string baseKEY = RecalboxConf::getInstance()->get("wifi.key");
+                     const std::string baseKEY = SettingsManager::getInstance()->get("wifi.key");
                      createInputTextRow(s, _("WIFI KEY"), "wifi.key", true);
 
                      s->addSaveFunc([baseEnabled, baseSSID, baseKEY, enable_wifi, window] {
                          bool wifienabled = enable_wifi->getState();
-                         RecalboxConf::getInstance()->set("wifi.enabled", wifienabled ? "1" : "0");
-                         std::string newSSID = RecalboxConf::getInstance()->get("wifi.ssid");
-                         std::string newKey = RecalboxConf::getInstance()->get("wifi.key");
-                         RecalboxConf::getInstance()->saveRecalboxConf();
+                         SettingsManager::getInstance()->set("wifi.enabled", wifienabled ? "1" : "0");
+                         std::string newSSID = SettingsManager::getInstance()->get("wifi.ssid");
+                         std::string newKey = SettingsManager::getInstance()->get("wifi.key");
+                         SettingsManager::getInstance()->save();
                          if (wifienabled) {
                              if (baseSSID != newSSID
                                  || baseKEY != newKey
                                  || !baseEnabled) {
                                  if (RecalboxSystem::getInstance()->enableWifi(newSSID, newKey)) {
                                      window->pushGui(
-						     new GuiMsgBox(window, _("WIFI ENABLED"))
+                                             new GuiMsgBox(window, _("WIFI ENABLED"))
                                      );
                                  } else {
                                      window->pushGui(
-						     new GuiMsgBox(window, _("WIFI CONFIGURATION ERROR"))
+                                             new GuiMsgBox(window, _("WIFI CONFIGURATION ERROR"))
                                      );
                                  }
                              }
@@ -772,30 +777,30 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                  });
     }
 
-    if (RecalboxConf::getInstance()->get("system.es.menu") != "bartop") {
+    if (SettingsManager::getInstance()->get("system.es.menu") != "bartop") {
         auto openScrapeNow = [this] { mWindow->pushGui(new GuiScraperStart(mWindow)); };
         addEntry(_("SCRAPER").c_str(), 0x777777FF, true,
                  [this, openScrapeNow] {
-		   auto s = new GuiSettings(mWindow, _("SCRAPER").c_str());
+                     auto s = new GuiSettings(mWindow, _("SCRAPER").c_str());
 
                      // scrape from
-		   auto scraper_list = std::make_shared<OptionListComponent<std::string> >(mWindow, _("SCRAPE FROM"),
+                     auto scraper_list = std::make_shared<OptionListComponent<std::string> >(mWindow, _("SCRAPE FROM"),
                                                                                              false);
                      std::vector<std::string> scrapers = getScraperList();
                      for (auto it = scrapers.begin(); it != scrapers.end(); it++)
-                         scraper_list->add(*it, *it, *it == Settings::getInstance()->getString("Scraper"));
+                         scraper_list->add(*it, *it, *it == SettingsManager::getInstance()->getString("Scraper"));
 
                      s->addWithLabel(_("SCRAPE FROM"), scraper_list);
                      s->addSaveFunc([scraper_list] {
-                         Settings::getInstance()->setString("Scraper", scraper_list->getSelected());
+                         SettingsManager::getInstance()->setString("Scraper", scraper_list->getSelected());
                      });
 
                      // scrape ratings
                      auto scrape_ratings = std::make_shared<SwitchComponent>(mWindow);
-                     scrape_ratings->setState(Settings::getInstance()->getBool("ScrapeRatings"));
+                     scrape_ratings->setState(SettingsManager::getInstance()->getBool("ScrapeRatings"));
                      s->addWithLabel(_("SCRAPE RATINGS"), scrape_ratings);
                      s->addSaveFunc([scrape_ratings] {
-                         Settings::getInstance()->setBool("ScrapeRatings", scrape_ratings->getState());
+                         SettingsManager::getInstance()->setBool("ScrapeRatings", scrape_ratings->getState());
                      });
 
                      // scrape now
@@ -821,7 +826,7 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
 
     addEntry(_("QUIT").c_str(), 0x777777FF, true,
              [this] {
-	       auto s = new GuiSettings(mWindow, _("QUIT").c_str());
+                 auto s = new GuiSettings(mWindow, _("QUIT").c_str());
 
                  Window *window = mWindow;
 
@@ -866,7 +871,7 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
                  row.addElement(std::make_shared<TextComponent>(window, _("FAST SHUTDOWN SYSTEM"), Font::get(FONT_SIZE_MEDIUM),
                                                                 0x777777FF), true);
                  s->addRow(row);
-                 /*if(Settings::getInstance()->getBool("ShowExit"))
+                 /*if(SettingsManager::getInstance()->getBool("ShowExit"))
                  {
                      row.elements.clear();
                      row.makeAcceptInputHandler([window] {
@@ -897,11 +902,11 @@ GuiMenu::GuiMenu(Window *window) : GuiComponent(window), mMenu(window, _("MAIN M
     setPosition((Renderer::getScreenWidth() - mSize.x()) / 2, Renderer::getScreenHeight() * 0.15f);
 }
 
-GuiMenu::~GuiMenu() {
-  clearLoadedInput();
+RecalboxGuiMenu::~RecalboxGuiMenu() {
+    clearLoadedInput();
 }
 
-void GuiMenu::popSystemConfigurationGui(SystemData *systemData, std::string previouslySelectedEmulator) const {
+void RecalboxGuiMenu::popSystemConfigurationGui(SystemData *systemData, std::string previouslySelectedEmulator) const {
     // The system configuration
     GuiSettings *systemConfiguration = new GuiSettings(mWindow,
                                                        systemData->getFullName().c_str());
@@ -916,7 +921,7 @@ void GuiMenu::popSystemConfigurationGui(SystemData *systemData, std::string prev
             // We just changed the emulator
             found = previouslySelectedEmulator == curEmulatorName;
         } else {
-            found = (RecalboxConf::getInstance()->get(systemData->getName() + ".emulator") == curEmulatorName);
+            found = (SettingsManager::getInstance()->get(systemData->getName() + ".emulator") == curEmulatorName);
         }
         if (found) {
             selectedEmulator = curEmulatorName;
@@ -938,7 +943,7 @@ void GuiMenu::popSystemConfigurationGui(SystemData *systemData, std::string prev
          emulator != systemData->getEmulators()->end(); emulator++) {
         if (selectedEmulator == emulator->first) {
             for (auto core = emulator->second->begin(); core != emulator->second->end(); core++) {
-                bool found = (RecalboxConf::getInstance()->get(systemData->getName() + ".core") == *core);
+                bool found = (SettingsManager::getInstance()->get(systemData->getName() + ".core") == *core);
                 selected = selected || found;
                 core_choice->add(*core, *core, found);
             }
@@ -953,63 +958,63 @@ void GuiMenu::popSystemConfigurationGui(SystemData *systemData, std::string prev
     systemConfiguration->addWithLabel(_("GAME RATIO"), ratio_choice);
     // smoothing
     auto smoothing_enabled = std::make_shared<SwitchComponent>(mWindow);
-    smoothing_enabled->setState(RecalboxConf::getInstance()->get(systemData->getName() + ".smooth", RecalboxConf::getInstance()->get("global.smooth")) == "1");
+    smoothing_enabled->setState(SettingsManager::getInstance()->get(systemData->getName() + ".smooth", SettingsManager::getInstance()->get("global.smooth")) == "1");
     systemConfiguration->addWithLabel(_("SMOOTH GAMES"), smoothing_enabled);
     // rewind
     auto rewind_enabled = std::make_shared<SwitchComponent>(mWindow);
     rewind_enabled->setState(
-            RecalboxConf::getInstance()->get(systemData->getName() + ".rewind", RecalboxConf::getInstance()->get("global.rewind")) == "1");
+            SettingsManager::getInstance()->get(systemData->getName() + ".rewind", SettingsManager::getInstance()->get("global.rewind")) == "1");
     systemConfiguration->addWithLabel(_("REWIND"), rewind_enabled);
     // autosave
     auto autosave_enabled = std::make_shared<SwitchComponent>(mWindow);
     autosave_enabled->setState(
-            RecalboxConf::getInstance()->get(systemData->getName() + ".autosave", RecalboxConf::getInstance()->get("global.autosave")) == "1");
+            SettingsManager::getInstance()->get(systemData->getName() + ".autosave", SettingsManager::getInstance()->get("global.autosave")) == "1");
     systemConfiguration->addWithLabel(_("AUTO SAVE/LOAD"), autosave_enabled);
 
 
     systemConfiguration->addSaveFunc(
             [systemData, smoothing_enabled, rewind_enabled, ratio_choice, emu_choice, core_choice, autosave_enabled] {
                 if(ratio_choice->changed()){
-                    RecalboxConf::getInstance()->set(systemData->getName() + ".ratio",
-                                                     ratio_choice->getSelected());
+                    SettingsManager::getInstance()->set(systemData->getName() + ".ratio",
+                                                        ratio_choice->getSelected());
                 }
                 if(rewind_enabled->changed()) {
-                    RecalboxConf::getInstance()->set(systemData->getName() + ".rewind",
-                                                     rewind_enabled->getState() ? "1" : "0");
+                    SettingsManager::getInstance()->set(systemData->getName() + ".rewind",
+                                                        rewind_enabled->getState() ? "1" : "0");
                 }
                 if(smoothing_enabled->changed()){
-                    RecalboxConf::getInstance()->set(systemData->getName() + ".smooth",
-                                                     smoothing_enabled->getState() ? "1" : "0");
+                    SettingsManager::getInstance()->set(systemData->getName() + ".smooth",
+                                                        smoothing_enabled->getState() ? "1" : "0");
                 }
                 if(emu_choice->changed()) {
-                    RecalboxConf::getInstance()->set(systemData->getName() + ".emulator", emu_choice->getSelected());
+                    SettingsManager::getInstance()->set(systemData->getName() + ".emulator", emu_choice->getSelected());
                 }
                 if(core_choice->changed()){
-                    RecalboxConf::getInstance()->set(systemData->getName() + ".core", core_choice->getSelected());
+                    SettingsManager::getInstance()->set(systemData->getName() + ".core", core_choice->getSelected());
                 }
                 if(autosave_enabled->changed()) {
-                    RecalboxConf::getInstance()->set(systemData->getName() + ".autosave",
-                                                     autosave_enabled->getState() ? "1" : "0");
+                    SettingsManager::getInstance()->set(systemData->getName() + ".autosave",
+                                                        autosave_enabled->getState() ? "1" : "0");
                 }
-                RecalboxConf::getInstance()->saveRecalboxConf();
+                SettingsManager::getInstance()->save();
             });
     mWindow->pushGui(systemConfiguration);
 }
 
-void GuiMenu::createConfigInput() {
+void RecalboxGuiMenu::createConfigInput() {
 
-  GuiSettings *s = new GuiSettings(mWindow, _("CONTROLLERS SETTINGS").c_str());
+    GuiSettings *s = new GuiSettings(mWindow, _("CONTROLLERS SETTINGS").c_str());
 
     Window *window = mWindow;
 
     ComponentListRow row;
     row.makeAcceptInputHandler([window, this, s] {
         window->pushGui(new GuiMsgBox(window,
-				      _("YOU ARE GOING TO CONFIGURE A CONTROLLER. IF YOU HAVE ONLY ONE JOYSTICK, "
-				      "CONFIGURE THE DIRECTIONS KEYS AND SKIP JOYSTICK CONFIG BY HOLDING A BUTTON. "
-				      "IF YOU DO NOT HAVE A SPECIAL KEY FOR HOTKEY, CHOOSE THE SELECT BUTTON. SKIP "
-				      "ALL BUTTONS YOU DO NOT HAVE BY HOLDING A KEY. BUTTONS NAMES ARE BASED ON THE "
-					"SNES CONTROLLER."), _("OK"),
+                                      _("YOU ARE GOING TO CONFIGURE A CONTROLLER. IF YOU HAVE ONLY ONE JOYSTICK, "
+                                                "CONFIGURE THE DIRECTIONS KEYS AND SKIP JOYSTICK CONFIG BY HOLDING A BUTTON. "
+                                                "IF YOU DO NOT HAVE A SPECIAL KEY FOR HOTKEY, CHOOSE THE SELECT BUTTON. SKIP "
+                                                "ALL BUTTONS YOU DO NOT HAVE BY HOLDING A KEY. BUTTONS NAMES ARE BASED ON THE "
+                                                "SNES CONTROLLER."), _("OK"),
                                       [window, this, s] {
                                           window->pushGui(new GuiDetectDevice(window, false, [this, s] {
                                               s->setSave(false);
@@ -1021,7 +1026,7 @@ void GuiMenu::createConfigInput() {
 
 
     row.addElement(
-		   std::make_shared<TextComponent>(window, _("CONFIGURE A CONTROLLER"), Font::get(FONT_SIZE_MEDIUM), 0x777777FF),
+            std::make_shared<TextComponent>(window, _("CONFIGURE A CONTROLLER"), Font::get(FONT_SIZE_MEDIUM), 0x777777FF),
             true);
     s->addRow(row);
 
@@ -1033,13 +1038,13 @@ void GuiMenu::createConfigInput() {
             window->pushGui(new GuiMsgBox(window, paired ? _("CONTROLLER PAIRED") : _("UNABLE TO PAIR CONTROLLER"), _("OK")));
         };
         if (controllers == NULL) {
-	  window->pushGui(new GuiMsgBox(window, _("AN ERROR OCCURED"), _("OK")));
+            window->pushGui(new GuiMsgBox(window, _("AN ERROR OCCURED"), _("OK")));
         } else {
             std::vector<std::string> *resolvedControllers = ((std::vector<std::string> *) controllers);
             if (resolvedControllers->size() == 0) {
-	      window->pushGui(new GuiMsgBox(window, _("NO CONTROLLERS FOUND"), _("OK")));
+                window->pushGui(new GuiMsgBox(window, _("NO CONTROLLERS FOUND"), _("OK")));
             } else {
-	            GuiSettings *pairGui = new GuiSettings(window, _("PAIR A BLUETOOTH CONTROLLER").c_str());
+                GuiSettings *pairGui = new GuiSettings(window, _("PAIR A BLUETOOTH CONTROLLER").c_str());
                 for (std::vector<std::string>::iterator controllerString = ((std::vector<std::string> *) controllers)->begin();
                      controllerString != ((std::vector<std::string> *) controllers)->end(); ++controllerString) {
 
@@ -1077,7 +1082,7 @@ void GuiMenu::createConfigInput() {
 
 
     row.addElement(
-		   std::make_shared<TextComponent>(window, _("PAIR A BLUETOOTH CONTROLLER"), Font::get(FONT_SIZE_MEDIUM),
+            std::make_shared<TextComponent>(window, _("PAIR A BLUETOOTH CONTROLLER"), Font::get(FONT_SIZE_MEDIUM),
                                             0x777777FF),
             true);
     s->addRow(row);
@@ -1113,15 +1118,15 @@ void GuiMenu::createConfigInput() {
         sstm << "INPUT P" << player + 1;
         std::string confName = sstm.str() + "NAME";
         std::string confGuid = sstm.str() + "GUID";
-	snprintf(strbuf, 256, _("INPUT P%i").c_str(), player+1);
+        snprintf(strbuf, 256, _("INPUT P%i").c_str(), player+1);
 
         LOG(LogInfo) << player + 1 << " " << confName << " " << confGuid;
         auto inputOptionList = std::make_shared<OptionListComponent<StrInputConfig *> >(mWindow, strbuf, false);
         options.push_back(inputOptionList);
 
         // Checking if a setting has been saved, else setting to default
-        std::string configuratedName = Settings::getInstance()->getString(confName);
-        std::string configuratedGuid = Settings::getInstance()->getString(confGuid);
+        std::string configuratedName = SettingsManager::getInstance()->getString(confName);
+        std::string configuratedGuid = SettingsManager::getInstance()->getString(confGuid);
         bool found = false;
         // For each available and configured input
         for (auto it = 0; it < InputManager::getInstance()->getNumJoysticks(); it++) {
@@ -1133,7 +1138,7 @@ void GuiMenu::createConfigInput() {
                 std::string deviceName = config->getDeviceName();
                 if (deviceName.size() > 25) {
                     dispNameSS << deviceName.substr(0, 16) << "..." <<
-                    deviceName.substr(deviceName.size() - 5, deviceName.size() - 1);
+                               deviceName.substr(deviceName.size() - 5, deviceName.size() - 1);
                 } else {
                     dispNameSS << deviceName;
                 }
@@ -1146,8 +1151,8 @@ void GuiMenu::createConfigInput() {
                 int deviceID = config->getDeviceId();
                 // Si la manette est configurée, qu'elle correspond a la configuration, et qu'elle n'est pas
                 // deja selectionnée on l'ajoute en séléctionnée
-		StrInputConfig* newInputConfig = new StrInputConfig(config->getDeviceName(), config->getDeviceGUIDString());
-		mLoadedInput.push_back(newInputConfig);
+                StrInputConfig* newInputConfig = new StrInputConfig(config->getDeviceName(), config->getDeviceGUIDString());
+                mLoadedInput.push_back(newInputConfig);
 
                 if (foundFromConfig
                     && std::find(alreadyTaken.begin(), alreadyTaken.end(), deviceID) == alreadyTaken.end()
@@ -1189,21 +1194,21 @@ void GuiMenu::createConfigInput() {
             std::string selectedName = input_p1->getSelectedName();
 
             if (selectedName.compare(strToUpper("default")) == 0) {
-	      name = "DEFAULT";
-	      Settings::getInstance()->setString(confName, name);
-	      Settings::getInstance()->setString(confGuid, "");
+                name = "DEFAULT";
+                SettingsManager::getInstance()->setString(confName, name);
+                SettingsManager::getInstance()->setString(confGuid, "");
             } else {
-	      if(input_p1->getSelected() != NULL) {
-		LOG(LogWarning) << "Found the selected controller ! : name in list  = " << selectedName;
-		LOG(LogWarning) << "Found the selected controller ! : guid  = " << input_p1->getSelected()->deviceGUIDString;
+                if(input_p1->getSelected() != NULL) {
+                    LOG(LogWarning) << "Found the selected controller ! : name in list  = " << selectedName;
+                    LOG(LogWarning) << "Found the selected controller ! : guid  = " << input_p1->getSelected()->deviceGUIDString;
 
-		Settings::getInstance()->setString(confName, input_p1->getSelected()->deviceName);
-		Settings::getInstance()->setString(confGuid, input_p1->getSelected()->deviceGUIDString);
-	      }
+                    SettingsManager::getInstance()->setString(confName, input_p1->getSelected()->deviceName);
+                    SettingsManager::getInstance()->setString(confGuid, input_p1->getSelected()->deviceGUIDString);
+                }
             }
         }
 
-        Settings::getInstance()->saveFile();
+        SettingsManager::getInstance()->save();
 
     });
 
@@ -1212,52 +1217,10 @@ void GuiMenu::createConfigInput() {
 
 }
 
-void GuiMenu::onSizeChanged() {
-    mVersion.setSize(mSize.x(), 0);
-    mVersion.setPosition(0, mSize.y() - mVersion.getSize().y());
-}
-
-void GuiMenu::addEntry(const char *name, unsigned int color, bool add_arrow, const std::function<void()> &func) {
-    std::shared_ptr<Font> font = Font::get(FONT_SIZE_MEDIUM);
-
-    // populate the list
-    ComponentListRow row;
-    row.addElement(std::make_shared<TextComponent>(mWindow, name, font, color), true);
-
-    if (add_arrow) {
-        std::shared_ptr<ImageComponent> bracket = makeArrow(mWindow);
-        row.addElement(bracket, false);
-    }
-
-    row.makeAcceptInputHandler(func);
-
-    mMenu.addRow(row);
-}
-
-bool GuiMenu::input(InputConfig *config, Input input) {
-    if (GuiComponent::input(config, input))
-        return true;
-
-    if ((config->isMappedTo("a", input) || config->isMappedTo("start", input)) && input.value != 0) {
-        delete this;
-        return true;
-    }
-
-    return false;
-}
-
-std::vector<HelpPrompt> GuiMenu::getHelpPrompts() {
-    std::vector<HelpPrompt> prompts;
-    prompts.push_back(HelpPrompt("up/down", _("CHOOSE")));
-    prompts.push_back(HelpPrompt("b", _("SELECT")));
-    prompts.push_back(HelpPrompt("start", _("CLOSE")));
-    return prompts;
-}
-
-std::shared_ptr<OptionListComponent<std::string>> GuiMenu::createRatioOptionList(Window *window,
-                                                                                 std::string configname) const {
+std::shared_ptr<OptionListComponent<std::string>> RecalboxGuiMenu::createRatioOptionList(Window *window,
+                                                                                         std::string configname) const {
     auto ratio_choice = std::make_shared<OptionListComponent<std::string> >(window, _("GAME RATIO"), false);
-    std::string currentRatio = RecalboxConf::getInstance()->get(configname + ".ratio");
+    std::string currentRatio = SettingsManager::getInstance()->get(configname + ".ratio");
     if (currentRatio.empty()) {
         currentRatio = std::string("auto");
     }

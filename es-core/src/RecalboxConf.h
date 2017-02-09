@@ -8,27 +8,25 @@
 
 #include <string>
 #include <map>
+#include "SettingsManager.h"
 
-class RecalboxConf {
+class RecalboxConf: public SettingsManager {
 
 public:
-    RecalboxConf();
+    bool load();
 
-    bool loadRecalboxConf();
-
-    bool saveRecalboxConf();
-
-    std::string get(const std::string &name);
-    std::string get(const std::string &name, const std::string &defaut);
-
-    void set(const std::string &name, const std::string &value);
-
-    static RecalboxConf *sInstance;
+    bool save();
 
     static RecalboxConf *getInstance();
-private:
-    std::map<std::string, std::string> confMap;
 
+protected:
+    //Clear everything and load default values.
+    void setDefaults();
+
+private:
+    RecalboxConf();
+
+    static RecalboxConf *sInstance;
 };
 
 

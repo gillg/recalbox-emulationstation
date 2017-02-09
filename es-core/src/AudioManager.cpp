@@ -75,7 +75,7 @@ void musicEndInternal() {
 }
 
 void AudioManager::themeChanged(const std::shared_ptr<ThemeData> &theme) {
-    if (RecalboxConf::getInstance()->get("audio.bgmusic") == "1") {
+    if (SettingsManager::getInstance()->get("audio.bgmusic") == "1") {
         const ThemeData::ThemeElement *elem = theme->getElement("system", "directory", "sound");
         if (!elem || !elem->has("path")) {
             currentThemeMusicDirectory = "";
@@ -117,7 +117,7 @@ void AudioManager::playRandomMusic() {// Find a random song in user directory or
 
 void AudioManager::resumeMusic() {
     this->init();
-    if (currentMusic != NULL && RecalboxConf::getInstance()->get("audio.bgmusic") == "1") {
+    if (currentMusic != NULL && SettingsManager::getInstance()->get("audio.bgmusic") == "1") {
         currentMusic->play(runningFromPlaylist ? false : true, runningFromPlaylist ? musicEndInternal : NULL);
     }
 }
@@ -205,7 +205,7 @@ std::vector<std::string> getMusicIn(const std::string &path) {
 
 std::shared_ptr<Music> AudioManager::getRandomMusic(std::string themeSoundDirectory) {
     // 1 check in User music directory
-    std::vector<std::string> musics = getMusicIn(Settings::getInstance()->getString("MusicDirectory"));
+    std::vector<std::string> musics = getMusicIn(SettingsManager::getInstance()->getString("MusicDirectory"));
     if (musics.empty()) {
         //  Check in theme sound directory
         if (themeSoundDirectory != "") {
@@ -221,7 +221,7 @@ std::shared_ptr<Music> AudioManager::getRandomMusic(std::string themeSoundDirect
 
 void AudioManager::musicEnd() {
     LOG(LogInfo) << "MusicEnded";
-    if (runningFromPlaylist && RecalboxConf::getInstance()->get("audio.bgmusic") == "1") {
+    if (runningFromPlaylist && SettingsManager::getInstance()->get("audio.bgmusic") == "1") {
         playRandomMusic();
     }
 }

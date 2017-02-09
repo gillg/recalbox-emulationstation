@@ -27,7 +27,7 @@ void GuiSettings::save()
 	for(auto it = mSaveFuncs.begin(); it != mSaveFuncs.end(); it++)
 		(*it)();
 
-	Settings::getInstance()->saveFile();
+	SettingsManager::getInstance()->save();
 }
 
 bool GuiSettings::input(InputConfig* config, Input input)

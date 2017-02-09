@@ -85,7 +85,7 @@ void TextComponent::render(const Eigen::Affine3f& parentTrans)
 		const Eigen::Vector2f& textSize = mTextCache->metrics.size;
 		Eigen::Vector3f off(0, (getSize().y() - textSize.y()) / 2.0f, 0);
 
-		if(Settings::getInstance()->getBool("DebugText"))
+		if(SettingsManager::getInstance()->getBool("DebugText"))
 		{
 			// draw the "textbox" area, what we are aligned within
 			Renderer::setMatrix(trans);
@@ -97,7 +97,7 @@ void TextComponent::render(const Eigen::Affine3f& parentTrans)
 		Renderer::setMatrix(trans);
 
 		// draw the text area, where the text actually is going
-		if(Settings::getInstance()->getBool("DebugText"))
+		if(SettingsManager::getInstance()->getBool("DebugText"))
 		{
 			switch(mAlignment)
 			{

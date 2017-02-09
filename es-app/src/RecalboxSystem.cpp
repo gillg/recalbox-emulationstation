@@ -45,7 +45,7 @@ unsigned long RecalboxSystem::getFreeSpaceGB(std::string mountpoint) {
 
 std::string RecalboxSystem::getFreeSpaceInfo() {
     struct statvfs fiData;
-    std::string sharePart = Settings::getInstance()->getString("SharePartition");
+    std::string sharePart = SettingsManager::getInstance()->getString("SharePartition");
     if (sharePart.size() > 0) {
         const char *fnPath = sharePart.c_str();
         if ((statvfs(fnPath, &fiData)) < 0) {
@@ -69,7 +69,7 @@ std::string RecalboxSystem::getFreeSpaceInfo() {
 }
 
 bool RecalboxSystem::isFreeSpaceLimit() {
-    std::string sharePart = Settings::getInstance()->getString("SharePartition");
+    std::string sharePart = SettingsManager::getInstance()->getString("SharePartition");
     if (sharePart.size() > 0) {
         return getFreeSpaceGB(sharePart) < 2;
     } else {
@@ -79,7 +79,7 @@ bool RecalboxSystem::isFreeSpaceLimit() {
 }
 
 std::string RecalboxSystem::getVersion() {
-    std::string version = Settings::getInstance()->getString("VersionFile");
+    std::string version = SettingsManager::getInstance()->getString("VersionFile");
     if (version.size() > 0) {
         std::ifstream ifs(version);
 
@@ -92,11 +92,15 @@ std::string RecalboxSystem::getVersion() {
     return "";
 }
 
+bool RecalboxSystem::isRecalBoxSystem() {
+    return boost::filesystem::exists("/recalbox/share/system/recalbox.conf");
+}
+
 
 bool RecalboxSystem::updateLastChangelogFile() {
     std::ostringstream oss;
-    oss << "cp  " << Settings::getInstance()->getString("Changelog").c_str() << " " <<
-        Settings::getInstance()->getString("LastChangelog").c_str();
+    oss << "cp  " << SettingsManager::getInstance()->getString("Changelog").c_str() << " " <<
+               SettingsManager::getInstance()->getString("LastChangelog").c_str();
     if (system(oss.str().c_str())) {
         LOG(LogWarning) << "Error executing " << oss.str().c_str();
         return false;
@@ -108,7 +112,7 @@ bool RecalboxSystem::updateLastChangelogFile() {
 
 std::string RecalboxSystem::getChangelog() {
     std::ostringstream oss;
-    std::string last = Settings::getInstance()->getString("LastChangelog");
+    std::string last = SettingsManager::getInstance()->getString("LastChangelog");
     std::ifstream f(last);
     if(!f.good()){
         std::ofstream outfile (last);
@@ -117,7 +121,7 @@ std::string RecalboxSystem::getChangelog() {
     }
     oss << "diff --changed-group-format='%>' --unchanged-group-format='' " <<
         last.c_str() << " " <<
-        Settings::getInstance()->getString("Changelog").c_str();
+        SettingsManager::getInstance()->getString("Changelog").c_str();
 
     FILE *pipe = popen(oss.str().c_str(), "r");
     char line[1024];
@@ -169,7 +173,7 @@ bool RecalboxSystem::setAudioOutputDevice(std::string device) {
 bool RecalboxSystem::setOverscan(bool enable) {
 
     std::ostringstream oss;
-    oss << Settings::getInstance()->getString("RecalboxSettingScript") << " " << "overscan";
+    oss << SettingsManager::getInstance()->getString("RecalboxSettingScript") << " " << "overscan";
     if (enable) {
         oss << " " << "enable";
     } else {
@@ -190,7 +194,7 @@ bool RecalboxSystem::setOverscan(bool enable) {
 bool RecalboxSystem::setOverclock(std::string mode) {
     if (mode != "") {
         std::ostringstream oss;
-        oss << Settings::getInstance()->getString("RecalboxSettingScript") << " "
+        oss << SettingsManager::getInstance()->getString("RecalboxSettingScript") << " "
             << "overclock" << " " << mode;
         std::string command = oss.str();
         LOG(LogInfo) << "Launching " << command;
@@ -208,7 +212,7 @@ bool RecalboxSystem::setOverclock(std::string mode) {
 
 
 std::pair<std::string, int> RecalboxSystem::updateSystem() {
-    std::string updatecommand = Settings::getInstance()->getString("UpdateCommand");
+    std::string updatecommand = SettingsManager::getInstance()->getString("UpdateCommand");
     FILE *pipe = popen(updatecommand.c_str(), "r");
     char line[1024];
     if (pipe == NULL) {
@@ -226,7 +230,7 @@ std::pair<std::string, int> RecalboxSystem::updateSystem() {
 }
 
 bool RecalboxSystem::ping() {
-    std::string updateserver = Settings::getInstance()->getString("UpdateServer");
+    std::string updateserver = SettingsManager::getInstance()->getString("UpdateServer");
     std::string s("ping -c 1 " + updateserver);
     int exitcode = system(s.c_str());
     return exitcode == 0;
@@ -234,7 +238,7 @@ bool RecalboxSystem::ping() {
 
 bool RecalboxSystem::canUpdate() {
     std::ostringstream oss;
-    oss << Settings::getInstance()->getString("RecalboxSettingScript") << " " << "canupdate";
+    oss << SettingsManager::getInstance()->getString("RecalboxSettingScript") << " " << "canupdate";
     std::string command = oss.str();
     LOG(LogInfo) << "Launching " << command;
     if (system(command.c_str()) == 0) {
@@ -289,7 +293,7 @@ bool RecalboxSystem::enableWifi(std::string ssid, std::string key) {
     std::ostringstream oss;
     boost::replace_all(ssid, "\"", "\\\"");
     boost::replace_all(key, "\"", "\\\"");
-    oss << Settings::getInstance()->getString("RecalboxSettingScript") << " "
+    oss << SettingsManager::getInstance()->getString("RecalboxSettingScript") << " "
         << "wifi" << " "
         << "enable" << " \""
         << ssid << "\" \"" << key << "\"";
@@ -306,7 +310,7 @@ bool RecalboxSystem::enableWifi(std::string ssid, std::string key) {
 
 bool RecalboxSystem::disableWifi() {
     std::ostringstream oss;
-    oss << Settings::getInstance()->getString("RecalboxSettingScript") << " "
+    oss << SettingsManager::getInstance()->getString("RecalboxSettingScript") << " "
         << "wifi" << " "
         << "disable";
     std::string command = oss.str();
@@ -403,7 +407,7 @@ std::string RecalboxSystem::getIpAdress() {
 std::vector<std::string> *RecalboxSystem::scanBluetooth() {
     std::vector<std::string> *res = new std::vector<std::string>();
     std::ostringstream oss;
-    oss << Settings::getInstance()->getString("RecalboxSettingScript") << " " << "hcitoolscan";
+    oss << SettingsManager::getInstance()->getString("RecalboxSettingScript") << " " << "hcitoolscan";
     FILE *pipe = popen(oss.str().c_str(), "r");
     char line[1024];
 
@@ -422,7 +426,7 @@ std::vector<std::string> *RecalboxSystem::scanBluetooth() {
 
 bool RecalboxSystem::pairBluetooth(std::string &controller) {
     std::ostringstream oss;
-    oss << Settings::getInstance()->getString("RecalboxSettingScript") << " " << "hiddpair" << " " << controller;
+    oss << SettingsManager::getInstance()->getString("RecalboxSettingScript") << " " << "hiddpair" << " " << controller;
     int exitcode = system(oss.str().c_str());
     return exitcode == 0;
 }
@@ -431,7 +435,7 @@ std::vector<std::string> RecalboxSystem::getAvailableStorageDevices() {
 
     std::vector<std::string> res;
     std::ostringstream oss;
-    oss << Settings::getInstance()->getString("RecalboxSettingScript") << " " << "storage list";
+    oss << SettingsManager::getInstance()->getString("RecalboxSettingScript") << " " << "storage list";
     FILE *pipe = popen(oss.str().c_str(), "r");
     char line[1024];
 
@@ -451,7 +455,7 @@ std::vector<std::string> RecalboxSystem::getAvailableStorageDevices() {
 std::string RecalboxSystem::getCurrentStorage() {
 
     std::ostringstream oss;
-    oss << Settings::getInstance()->getString("RecalboxSettingScript") << " " << "storage current";
+    oss << SettingsManager::getInstance()->getString("RecalboxSettingScript") << " " << "storage current";
     FILE *pipe = popen(oss.str().c_str(), "r");
     char line[1024];
 
@@ -469,14 +473,14 @@ std::string RecalboxSystem::getCurrentStorage() {
 
 bool RecalboxSystem::setStorage(std::string selected) {
     std::ostringstream oss;
-    oss << Settings::getInstance()->getString("RecalboxSettingScript") << " " << "storage" << " " << selected;
+    oss << SettingsManager::getInstance()->getString("RecalboxSettingScript") << " " << "storage" << " " << selected;
     int exitcode = system(oss.str().c_str());
     return exitcode == 0;
 }
 
 bool RecalboxSystem::forgetBluetoothControllers() {
     std::ostringstream oss;
-    oss << Settings::getInstance()->getString("RecalboxSettingScript") << " " << "forgetBT";
+    oss << SettingsManager::getInstance()->getString("RecalboxSettingScript") << " " << "forgetBT";
     int exitcode = system(oss.str().c_str());
     return exitcode == 0;
 }
@@ -484,7 +488,7 @@ bool RecalboxSystem::forgetBluetoothControllers() {
 std::string RecalboxSystem::getRootPassword() {
 
     std::ostringstream oss;
-    oss << Settings::getInstance()->getString("RecalboxSettingScript") << " " << "getRootPassword";
+    oss << SettingsManager::getInstance()->getString("RecalboxSettingScript") << " " << "getRootPassword";
     FILE *pipe = popen(oss.str().c_str(), "r");
     char line[1024];
 

@@ -39,7 +39,7 @@ namespace fs = boost::filesystem;
 #define DEFAULT_ROMS_PATH_KEY "DefaultRomsPath"
 #define DEFAULT_EXTERNAL_ROMS_PATH_KEY "DefaultExternalRomsPath"
 #define PLATFORM_EXTERNAL_ROMS_PATH_KEY_FORMAT "ExternalRomsPath_%1%"
-#define STRING_SETTING(KEY) Settings::getInstance()->getString(KEY)
+#define STRING_SETTING(KEY) SettingsManager::getInstance()->getString(KEY)
 
 namespace {
 	bool fileDataLessThan(const FileData* lhs, const FileData* rhs) {
@@ -281,7 +281,7 @@ GuiRomsManager::GuiRomsManager(Window *window)
 GuiRomsManager::~GuiRomsManager()
 {
 	if (m_settingsEdited) {
-		Settings::getInstance()->saveFile();
+		SettingsManager::getInstance()->save();
 	}
 }
 
@@ -350,7 +350,7 @@ void GuiRomsManager::editDefaultRomsPath()
 {
 	const fs::path path = getExpandedPath(STRING_SETTING(DEFAULT_ROMS_PATH_KEY));
 	auto updateValue = [this](const fs::path& filePath) {
-		Settings::getInstance()->setString(DEFAULT_ROMS_PATH_KEY, filePath.string());
+		SettingsManager::getInstance()->setString(DEFAULT_ROMS_PATH_KEY, filePath.string());
 		m_defaultRomsPath->setText(filePath.string());
 		m_settingsEdited = true;
 		onSizeChanged();
@@ -365,7 +365,7 @@ void GuiRomsManager::editDefaultExternalRomsPath()
 {
 	const fs::path path = getExpandedPath(STRING_SETTING(DEFAULT_EXTERNAL_ROMS_PATH_KEY));
 	auto updateValue = [this](const fs::path& filePath) {
-		Settings::getInstance()->setString(DEFAULT_EXTERNAL_ROMS_PATH_KEY, filePath.string());
+		SettingsManager::getInstance()->setString(DEFAULT_EXTERNAL_ROMS_PATH_KEY, filePath.string());
 		m_defaultExternalRomsPath->setText(filePath.string());
 		m_settingsEdited = true;
 		onSizeChanged();
@@ -383,7 +383,7 @@ void GuiRomsManager::editCurrentPlatformExternalRomsPath()
 	const fs::path defaultPath = getExpandedPath(STRING_SETTING(DEFAULT_EXTERNAL_ROMS_PATH_KEY));
 	const fs::path path = data.externalRomsPath.empty() ? defaultPath : data.externalRomsPath;
 	auto updateValue = [this, key](const fs::path& filePath) {
-		Settings::getInstance()->setString(key, filePath.string());
+		SettingsManager::getInstance()->setString(key, filePath.string());
 		m_platformExternalRomsPath->setText(filePath.string());
 		m_settingsEdited = true;
 		onSizeChanged();
