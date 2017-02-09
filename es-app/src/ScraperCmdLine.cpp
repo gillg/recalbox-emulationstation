@@ -139,7 +139,7 @@ int run_scraper_cmdline()
 	out << "=============================\n";
 
 	/*
-	std::shared_ptr<Scraper> scraper = Settings::getInstance()->getScraper();
+	std::shared_ptr<Scraper> scraper = SettingsManager::getInstance()->getScraper();
 	for(auto sysIt = systems.begin(); sysIt != systems.end(); sysIt++)
 	{
 		std::vector<FileData*> files = (*sysIt)->getRootFolder()->getFilesRecursive(GAME);

@@ -18,7 +18,6 @@ Window::Window() : mNormalizeNextUpdate(false), mFrameTimeElapsed(0), mFrameCoun
 {
 	mHelp = new HelpComponent(this);
 	mBackgroundOverlay = new ImageComponent(this);
-	mBackgroundOverlay->setImage(":/scroll_gradient.png");
 }
 
 Window::~Window()
@@ -77,6 +76,8 @@ bool Window::init(unsigned int width, unsigned int height, bool initRenderer)
         }
     }
 
+    mBackgroundOverlay->setImage(":/scroll_gradient.png");
+
 	InputManager::getInstance()->init();
 
 	ResourceManager::getInstance()->reloadAll();
@@ -124,19 +125,21 @@ void Window::input(InputConfig* config, Input input)
 
 	mTimeSinceLastInput = 0;
 
-	if(config->getDeviceId() == DEVICE_KEYBOARD && input.value && input.id == SDLK_g && SDL_GetModState() & KMOD_LCTRL && Settings::getInstance()->getBool("Debug"))
+	if(config->getDeviceId() == DEVICE_KEYBOARD && input.value && input.id == SDLK_g && SDL_GetModState() & KMOD_LCTRL && SettingsManager::getInstance()->getBool("Debug"))
 	{
 		// toggle debug grid with Ctrl-G
-		Settings::getInstance()->setBool("DebugGrid", !Settings::getInstance()->getBool("DebugGrid"));
+		SettingsManager::getInstance()->setBool("DebugGrid", !SettingsManager::getInstance()->getBool("DebugGrid"));
 	}
-	else if(config->getDeviceId() == DEVICE_KEYBOARD && input.value && input.id == SDLK_t && SDL_GetModState() & KMOD_LCTRL && Settings::getInstance()->getBool("Debug"))
+	else if(config->getDeviceId() == DEVICE_KEYBOARD && input.value && input.id == SDLK_t && SDL_GetModState() & KMOD_LCTRL && SettingsManager::getInstance()->getBool("Debug"))
 	{
 		// toggle TextComponent debug view with Ctrl-T
-		Settings::getInstance()->setBool("DebugText", !Settings::getInstance()->getBool("DebugText"));
+		SettingsManager::getInstance()->setBool("DebugText", !SettingsManager::getInstance()->getBool("DebugText"));
 	}
 	else
 	{
-            if(config->isMappedTo("x", input) && input.value && !launchKodi && RecalboxConf::getInstance()->get("kodi.enabled") == "1" && RecalboxConf::getInstance()->get("kodi.xbutton") == "1"){
+            if(config->isMappedTo("x", input) && input.value && !launchKodi
+			   && SettingsManager::getInstance()->get("kodi.enabled") == "1"
+			   && SettingsManager::getInstance()->get("kodi.xbutton") == "1"){
                 launchKodi = true;
                 Window * window = this;
                 this->pushGui(new GuiMsgBox(this, _("DO YOU WANT TO START KODI MEDIA CENTER ?"), _("YES"),
@@ -176,7 +179,7 @@ void Window::update(int deltaTime)
 	{
 		mAverageDeltaTime = mFrameTimeElapsed / mFrameCountElapsed;
 		
-		if(Settings::getInstance()->getBool("DrawFramerate"))
+		if(SettingsManager::getInstance()->getBool("DrawFramerate"))
 		{
 			std::stringstream ss;
 			
@@ -226,13 +229,13 @@ void Window::render()
 	if(!mRenderedHelpPrompts)
 		mHelp->render(transform);
 
-	if(Settings::getInstance()->getBool("DrawFramerate") && mFrameDataText)
+	if(SettingsManager::getInstance()->getBool("DrawFramerate") && mFrameDataText)
 	{
 		Renderer::setMatrix(Eigen::Affine3f::Identity());
 		mDefaultFonts.at(1)->renderTextCache(mFrameDataText.get());
 	}
 
-	unsigned int screensaverTime = (unsigned int)Settings::getInstance()->getInt("ScreenSaverTime");
+	unsigned int screensaverTime = (unsigned int)SettingsManager::getInstance()->getInt("ScreenSaverTime");
 	if(mTimeSinceLastInput >= screensaverTime && screensaverTime != 0)
 	{
 		renderScreenSaver();
@@ -387,6 +390,6 @@ bool Window::isProcessing()
 void Window::renderScreenSaver()
 {
 	Renderer::setMatrix(Eigen::Affine3f::Identity());
-	unsigned char opacity = Settings::getInstance()->getString("ScreenSaverBehavior") == "dim" ? 0xA0 : 0xFF;
+	unsigned char opacity = SettingsManager::getInstance()->getString("ScreenSaverBehavior") == "dim" ? 0xA0 : 0xFF;
 	Renderer::drawRect(0, 0, Renderer::getScreenWidth(), Renderer::getScreenHeight(), 0x00000000 | opacity);
 }

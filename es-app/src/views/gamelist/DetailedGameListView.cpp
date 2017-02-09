@@ -324,13 +324,13 @@ std::vector<HelpPrompt> DetailedGameListView::getHelpPrompts()
 {
 	std::vector<HelpPrompt> prompts;
 
-	if (Settings::getInstance()->getBool("QuickSystemSelect") && !Settings::getInstance()->getBool("HideSystemView"))
+	if (SettingsManager::getInstance()->getBool("QuickSystemSelect") && !SettingsManager::getInstance()->getBool("HideSystemView"))
 	{
 	  prompts.push_back(HelpPrompt("left/right", _("SYSTEM")));
 	}
 	prompts.push_back(HelpPrompt("up/down", _("CHOOSE")));
 	prompts.push_back(HelpPrompt("b", _("LAUNCH")));
-	if(!Settings::getInstance()->getBool("HideSystemView"))
+	if(!SettingsManager::getInstance()->getBool("HideSystemView"))
 	  prompts.push_back(HelpPrompt("a", _("BACK")));
 	if(getRoot()->getSystem() != SystemData::getFavoriteSystem()) {
 	  prompts.push_back(HelpPrompt("y", _("Favorite")));

@@ -7,32 +7,11 @@
 
 Settings *Settings::sInstance = NULL;
 
-// these values are NOT saved to es_settings.xml
-// since they're set through command-line arguments, and not the in-program settings menu
-std::vector<const char *> settings_dont_save = boost::assign::list_of
-        ("Debug")
-        ("DebugGrid")
-        ("DebugText")
-        ("ParseGamelistOnly")
-        ("ShowExit")
-        ("Windowed")
-        ("VSync")
-        ("HideConsole")
-        ("IgnoreGamelist")
-        ("UpdateCommand")
-        ("UpdateServer")
-        ("VersionFile")
-        ("SharePartition")
-        ("RecalboxSettingScript")
-        ("RecalboxConfigScript")
-        ("LastVersionFile")
-        ("VersionMessage")
-        ("HideSystemView")
-        ("MusicDirectory");
+std::string confFile = getHomePath() + "/.emulationstation/es_settings.cfg";
 
 Settings::Settings() {
     setDefaults();
-    loadFile();
+    load();
 }
 
 Settings *Settings::getInstance() {
@@ -58,7 +37,7 @@ void Settings::setDefaults() {
 	// don't enable VSync by default on the Pi, since it already
 	// has trouble trying to render things at 60fps in certain menus
 	mBoolMap["VSync"] = false;
-    #else
+#else
     mBoolMap["VSync"] = true;
 #endif
 
@@ -92,24 +71,15 @@ void Settings::setDefaults() {
     mStringMap["INPUT P3"] = "DEFAULT";
     mStringMap["INPUT P4"] = "DEFAULT";
     mStringMap["Overclock"] = "none";
-    mStringMap["UpdateCommand"] = "/recalbox/scripts/recalbox-upgrade.sh";
-    mStringMap["UpdateServer"] = "archive.recalbox.com";
-    mStringMap["VersionFile"] = "/recalbox/recalbox.version";
-    mStringMap["SharePartition"] = "/recalbox/share/";
-    mStringMap["RecalboxSettingScript"] = "/recalbox/scripts/recalbox-config.sh";
-    mStringMap["LastChangelog"] = "/recalbox/share/system/recalbox.changelog.done";
-    mStringMap["Changelog"] = "/recalbox/recalbox.changelog";
-    mStringMap["MusicDirectory"] = "/recalbox/share/music/";
+    mStringMap["UpdateCommand"] = "./scripts/emulationstation-upgrade.sh";
+    mStringMap["UpdateServer"] = "";
+    mStringMap["MusicDirectory"] = "./music/";
 
 }
 
 template<typename K, typename V>
 void saveMap(pugi::xml_node &node, std::map<K, V> &map, const char *type) {
     for (auto iter = map.begin(); iter != map.end(); iter++) {
-        // key is on the "don't save" list, so don't save it
-        if (std::find(settings_dont_save.begin(), settings_dont_save.end(), iter->first) != settings_dont_save.end())
-            continue;
-
         pugi::xml_node parent_node = node.append_child(type);
         parent_node.append_attribute("name").set_value(iter->first.c_str());
         parent_node.append_attribute("value").set_value(iter->second);
@@ -117,8 +87,10 @@ void saveMap(pugi::xml_node &node, std::map<K, V> &map, const char *type) {
 }
 
 void Settings::saveFile() {
-    const std::string path = getHomePath() + "/.emulationstation/es_settings.cfg";
+    save();
+}
 
+bool Settings::save() {
     pugi::xml_document doc;
 
     pugi::xml_node config = doc.append_child("config");
@@ -134,20 +106,22 @@ void Settings::saveFile() {
         node.append_attribute("value").set_value(iter->second.c_str());
     }
 
-    doc.save_file(path.c_str());
+    return doc.save_file(confFile.c_str());
 }
 
 void Settings::loadFile() {
-    const std::string path = getHomePath() + "/.emulationstation/es_settings.cfg";
+    load();
+}
 
-    if (!boost::filesystem::exists(path))
-        return;
+bool Settings::load() {
+    if (!boost::filesystem::exists(confFile))
+        return false;
 
     pugi::xml_document doc;
-    pugi::xml_parse_result result = doc.load_file(path.c_str());
+    pugi::xml_parse_result result = doc.load_file(confFile.c_str());
     if (!result) {
         LOG(LogError) << "Could not parse Settings file!\n   " << result.description();
-        return;
+        return false;
     }
 
     pugi::xml_node config = doc.child("config");
@@ -170,26 +144,6 @@ void Settings::loadFile() {
       for (pugi::xml_node node = doc.child("string"); node; node = node.next_sibling("string"))
         setString(node.attribute("name").as_string(), node.attribute("value").as_string());
     }
+
+    return true;
 }
-
-//Print a warning message if the setting we're trying to get doesn't already exist in the map, then return the value in the map.
-#define SETTINGS_GETSET(type, mapName, getMethodName, setMethodName) type Settings::getMethodName(const std::string& name) \
-{ \
-    if(mapName.find(name) == mapName.end()) \
-    { \
-        LOG(LogError) << "Tried to use unset setting " << name << "!"; \
-    } \
-    return mapName[name]; \
-} \
-void Settings::setMethodName(const std::string& name, type value) \
-{ \
-    mapName[name] = value; \
-}
-
-SETTINGS_GETSET(bool, mBoolMap, getBool, setBool);
-
-SETTINGS_GETSET(int, mIntMap, getInt, setInt);
-
-SETTINGS_GETSET(float, mFloatMap, getFloat, setFloat);
-
-SETTINGS_GETSET(const std::string&, mStringMap, getString, setString);

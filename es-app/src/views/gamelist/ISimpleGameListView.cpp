@@ -112,7 +112,7 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 				setCursor(mCursorStack.top());
 				mCursorStack.pop();
 				//Sound::getFromTheme(getTheme(), getName(), "back")->play();
-			}else if (!Settings::getInstance()->getBool("HideSystemView")) {
+			}else if (!SettingsManager::getInstance()->getBool("HideSystemView")) {
 				onFocusLost();
 
 				if (mFavoriteChange)
@@ -164,7 +164,7 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 			}
 		}else if(config->isMappedTo("right", input))
 		{
-			if(Settings::getInstance()->getBool("QuickSystemSelect") && !Settings::getInstance()->getBool("HideSystemView"))
+			if(SettingsManager::getInstance()->getBool("QuickSystemSelect") && !SettingsManager::getInstance()->getBool("HideSystemView"))
 			{
 				onFocusLost();
 				if (mFavoriteChange)
@@ -177,7 +177,7 @@ bool ISimpleGameListView::input(InputConfig* config, Input input)
 			}
 		}else if(config->isMappedTo("left", input))
 		{
-			if(Settings::getInstance()->getBool("QuickSystemSelect") && !Settings::getInstance()->getBool("HideSystemView"))
+			if(SettingsManager::getInstance()->getBool("QuickSystemSelect") && !SettingsManager::getInstance()->getBool("HideSystemView"))
 			{
 				onFocusLost();
 				if (mFavoriteChange)

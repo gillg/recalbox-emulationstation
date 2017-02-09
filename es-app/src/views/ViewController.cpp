@@ -9,6 +9,7 @@
 #include "views/gamelist/DetailedGameListView.h"
 #include "views/gamelist/GridGameListView.h"
 #include "guis/GuiMenu.h"
+#include "guis/recalbox/RecalboxGuiMenu.h"
 #include "guis/GuiDetectDevice.h"
 #include "guis/GuiMsgBox.h"
 #include "animations/LaunchAnimation.h"
@@ -36,7 +37,7 @@ ViewController::ViewController(Window* window)
 	: GuiComponent(window), mCurrentView(nullptr), mCamera(Eigen::Affine3f::Identity()), mFadeOpacity(0), mLockInput(false)
 {
 	mState.viewing = NOTHING;
-	mFavoritesOnly = Settings::getInstance()->getBool("FavoritesOnly");
+	mFavoritesOnly = SettingsManager::getInstance()->getBool("FavoritesOnly");
 }
 
 ViewController::~ViewController()
@@ -52,7 +53,7 @@ void ViewController::goToStart()
 	mCurrentView.reset();
 	playViewTransition(); */
 	int firstSystemIndex = getFirstSystemIndex();
-	if (Settings::getInstance()->getBool("HideSystemView") || RecalboxConf::getInstance()->get("system.es.bootongamelist") == "1")
+	if (SettingsManager::getInstance()->getBool("HideSystemView") || SettingsManager::getInstance()->get("system.es.bootongamelist") == "1")
 	  goToGameList(SystemData::sSystemVector.at(firstSystemIndex));
 	else
 	  goToSystemView(SystemData::sSystemVector.at(firstSystemIndex));
@@ -121,9 +122,9 @@ void ViewController::goToGameList(SystemData* system)
 	{
 		if(!system->isFavorite()) {
 			updateFavorite(system, getGameListView(system).get()->getCursor());
-			if (mFavoritesOnly != Settings::getInstance()->getBool("FavoritesOnly")) {
+			if (mFavoritesOnly != SettingsManager::getInstance()->getBool("FavoritesOnly")) {
 				reloadGameListView(system);
-				mFavoritesOnly = Settings::getInstance()->getBool("FavoritesOnly");
+				mFavoritesOnly = SettingsManager::getInstance()->getBool("FavoritesOnly");
 			}
 		}else {
 			reloadGameListView(system);
@@ -141,7 +142,7 @@ void ViewController::goToGameList(SystemData* system)
 void ViewController::updateFavorite(SystemData* system, FileData* file)
 {
 	IGameListView* view = getGameListView(system).get();
-	if (Settings::getInstance()->getBool("FavoritesOnly"))
+	if (SettingsManager::getInstance()->getBool("FavoritesOnly"))
 	{
 		const std::vector<FileData*>& files = system->getRootFolder()->getChildren();
 		view->populateList(files);
@@ -194,7 +195,7 @@ void ViewController::playViewTransition()
 	if(target == -mCamera.translation() && !isAnimationPlaying(0))
 		return;
 
-	if(Settings::getInstance()->getString("TransitionStyle") == "fade")
+	if(SettingsManager::getInstance()->getString("TransitionStyle") == "fade")
 	{
 		// fade
 		// stop whatever's currently playing, leaving mFadeOpacity wherever it is
@@ -251,7 +252,7 @@ void ViewController::launch(FileData* game, Eigen::Vector3f center)
 	stopAnimation(1); // make sure the fade in isn't still playing
 	mLockInput = true;
 
-	if(Settings::getInstance()->getString("TransitionStyle") == "fade")
+	if(SettingsManager::getInstance()->getString("TransitionStyle") == "fade")
 	{
 		// fade out, launch game, fade back in
 		auto fadeFunc = [this](float t) {
@@ -341,19 +342,27 @@ bool ViewController::input(InputConfig* config, Input input)
 		return true;
 
 	/* if we receive a button pressure for a non configured joystick, suggest the joystick configuration */
-        if(config->isConfigured() == false) {
+	if(config->isConfigured() == false) {
 	  if(input.type == TYPE_BUTTON) {
 	    mWindow->pushGui(new GuiDetectDevice(mWindow, false, NULL));
 	    return true;
 	  }
-        }
+	}
 
 	// open menu
-	if(config->isMappedTo("start", input) && input.value != 0 && RecalboxConf::getInstance()->get("system.es.menu") != "none" )
-	{
-		// open menu
-		mWindow->pushGui(new GuiMenu(mWindow));
-		return true;
+	if (RecalboxSystem::getInstance()->isRecalBoxSystem()) {
+		if (config->isMappedTo("start", input) && input.value != 0 &&
+				SettingsManager::getInstance()->get("system.es.menu") != "none") {
+			// open menu
+			mWindow->pushGui(new RecalboxGuiMenu(mWindow));
+			return true;
+		}
+	} else {
+		if (config->isMappedTo("start", input) && input.value != 0) {
+			// open menu
+			mWindow->pushGui(new GuiMenu(mWindow));
+			return true;
+		}
 	}
 
 	if(mCurrentView)
@@ -524,7 +533,7 @@ std::vector<HelpPrompt> ViewController::getHelpPrompts()
 		return prompts;
 
 	prompts = mCurrentView->getHelpPrompts();
-	if(RecalboxConf::getInstance()->get("system.es.menu") != "none"){
+	if(SettingsManager::getInstance()->get("system.es.menu") != "none"){
 	  prompts.push_back(HelpPrompt("start", _("MENU")));
 	}
 
@@ -540,7 +549,7 @@ HelpStyle ViewController::getHelpStyle()
 }
 
 int ViewController::getFirstSystemIndex() {
-	std::string systemName = RecalboxConf::getInstance()->get("system.es.selectedsystem");
+	std::string systemName = SettingsManager::getInstance()->get("system.es.selectedsystem");
 	if(systemName != ""){
 		int index = SystemData::getSystemIndex(systemName);
 		if (index != -1){

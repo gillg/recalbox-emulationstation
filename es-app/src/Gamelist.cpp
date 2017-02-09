@@ -171,7 +171,7 @@ void updateGamelist(SystemData* system)
 	//We have the complete information for every game though, so we can simply remove a game
 	//we already have in the system from the XML, and then add it back from its GameData information...
 
-	if(Settings::getInstance()->getBool("IgnoreGamelist"))
+	if(SettingsManager::getInstance()->getBool("IgnoreGamelist"))
 		return;
 
 	pugi::xml_document doc;

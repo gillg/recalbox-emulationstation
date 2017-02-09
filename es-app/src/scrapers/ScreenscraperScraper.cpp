@@ -87,7 +87,7 @@ void screenscraper_generate_scraper_requests(const ScraperSearchParams& params, 
 	std::vector<ScraperSearchResult>& results)
 {
 	std::string path = "screenscraper.recalbox.com/api/thegamedb/GetGame.php?";
-	std::string languageSystem = RecalboxConf::getInstance()->get("system.language");
+	std::string languageSystem = SettingsManager::getInstance()->get("system.language");
 
 	if((system_language_map.find(languageSystem)) != system_language_map.end())
 	{
@@ -162,7 +162,7 @@ void ScreenscraperRequest::process(const std::unique_ptr<HttpReq>& req, std::vec
 		result.mdl.set("genre", game.child("Genres").first_child().text().get());
 		result.mdl.set("players", game.child("Players").text().get());
 
-		if(Settings::getInstance()->getBool("ScrapeRatings") && game.child("Rating"))
+		if(SettingsManager::getInstance()->getBool("ScrapeRatings") && game.child("Rating"))
 		{
 			result.mdl.set("rating", game.child("Rating").text().get());
 		}

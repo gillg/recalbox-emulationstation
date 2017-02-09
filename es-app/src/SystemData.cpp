@@ -34,7 +34,7 @@ SystemData::SystemData(std::string name, std::string fullName, std::string start
 
 	// make it absolute if needed
 	{
-		const std::string defaultRomsPath = getExpandedPath(Settings::getInstance()->getString("DefaultRomsPath"));
+		const std::string defaultRomsPath = getExpandedPath(SettingsManager::getInstance()->getString("DefaultRomsPath"));
 
 		if (!defaultRomsPath.empty())
 		{
@@ -50,10 +50,10 @@ SystemData::SystemData(std::string name, std::string fullName, std::string start
 	mRootFolder = new FileData(FOLDER, mStartPath, this);
 	mRootFolder->metadata.set("name", mFullName);
 
-	if(!Settings::getInstance()->getBool("ParseGamelistOnly"))
+	if(!SettingsManager::getInstance()->getBool("ParseGamelistOnly"))
 		populateFolder(mRootFolder);
 
-	if(!Settings::getInstance()->getBool("IgnoreGamelist"))
+	if(!SettingsManager::getInstance()->getBool("IgnoreGamelist"))
 		parseGamelist(this);
 
 	mRootFolder->sort(FileSorts::SortTypes.at(0));
@@ -91,7 +91,7 @@ SystemData::SystemData(std::string name, std::string fullName, std::string comma
 SystemData::~SystemData()
 {
 	//save changed game data back to xml
-	if(!Settings::getInstance()->getBool("IgnoreGamelist"))
+	if(!SettingsManager::getInstance()->getBool("IgnoreGamelist"))
 	{
 		updateGamelist(this);
 	}

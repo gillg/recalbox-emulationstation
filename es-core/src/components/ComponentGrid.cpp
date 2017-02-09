@@ -152,7 +152,7 @@ void ComponentGrid::updateSeparators()
 {
 	mLines.clear();
 
-	bool drawAll = Settings::getInstance()->getBool("DebugGrid");
+	bool drawAll = SettingsManager::getInstance()->getBool("DebugGrid");
 
 	Eigen::Vector2f pos;
 	Eigen::Vector2f size;

@@ -63,7 +63,7 @@ namespace Renderer
 		sdlWindow = SDL_CreateWindow("EmulationStation", 
 			SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
 			display_width, display_height, 
-			SDL_WINDOW_OPENGL | (Settings::getInstance()->getBool("Windowed") ? 0 : SDL_WINDOW_FULLSCREEN));
+			SDL_WINDOW_OPENGL | (SettingsManager::getInstance()->getBool("Windowed") ? 0 : SDL_WINDOW_FULLSCREEN));
 
 		if(sdlWindow == NULL)
 		{
@@ -99,7 +99,7 @@ namespace Renderer
 		sdlContext = SDL_GL_CreateContext(sdlWindow);
 
 		// vsync
-		if(Settings::getInstance()->getBool("VSync"))
+		if(SettingsManager::getInstance()->getBool("VSync"))
 		{
 			// SDL_GL_SetSwapInterval(0) for immediate updates (no vsync, default), 
 			// 1 for updates synchronized with the vertical retrace, 

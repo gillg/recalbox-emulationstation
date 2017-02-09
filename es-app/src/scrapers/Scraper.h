@@ -144,7 +144,7 @@ private:
 //Will create the "downloaded_images" and "subdirectory" directories if they do not exist.
 std::string getSaveAsPath(const ScraperSearchParams& params, const std::string& suffix, const std::string& url);
 
-//Will resize according to Settings::getInt("ScraperResizeWidth") and Settings::getInt("ScraperResizeHeight").
+//Will resize according to SettingsManager::getInt("ScraperResizeWidth") and SettingsManager::getInt("ScraperResizeHeight").
 std::unique_ptr<ImageDownloadHandle> downloadImageAsync(const std::string& url, const std::string& saveAs);
 
 // Resolves all metadata assets that need to be downloaded.
