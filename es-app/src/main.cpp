@@ -238,7 +238,7 @@ int main(int argc, char* argv[])
 	// will leave a brief flash.
 	// TL;DR: You should compile ES under the "WINDOWS" subsystem.
 	// I have no idea how this works with non-MSVC compilers.
-	if(!Settings::getInstance()->getBool("HideConsole"))
+	if(!SettingsManager::getInstance()->getBool("HideConsole"))
 	{
 		// we want to show the console
 		// if we're compiled in "CONSOLE" mode, this is already done.
